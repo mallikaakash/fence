@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Cloned by `npm run setup` (do not commit nested upstream repo)
+vendor/
+
+# Environment & keys (never commit)
+.env
+.env.*
+!.env.example
+*.key
+*.key.json
+**/keystore/**
+**/.injective-mcp/**
+**/credentials.json
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*

@@ -1,0 +1,38 @@
+---
+description: Injective buildathon scaffold — tooling, safety, no premature app implementation
+alwaysApply: true
+---
+
+# Injective buildathon (scaffold phase)
+
+## Intent
+
+This repo is **tooling + research**, not a finished product. Do not add application code (contracts, services, full UIs) until the human picks a hackathon track in `brainstorm/`.
+
+## Defaults
+
+- **Network:** `testnet` unless the user explicitly approves mainnet or funded operations.
+- **Signing:** Treat `injective-trading` MCP as high risk. Prefer read-only tools (`market_*`, `account_balances` without funding keys). No `wallet_generate` / `wallet_import` / trades unless the user asks.
+- **Secrets:** Never commit `.env`, mnemonics, or MCP keystores.
+
+## Where things live
+
+| Path | Purpose |
+|------|---------|
+| `.agents/skills/*` | Official Injective agent skills (refresh via `npm run skills:install`) |
+| `vendor/mcp-server/` | Cloned InjectiveLabs trading MCP (build via `npm run setup`) |
+| `docs/` | Human setup notes and ecosystem map |
+| `brainstorm/` | Idea specs — source of truth before implementation |
+| `prompts/` | Reusable agent setup prompts |
+
+## Before implementing
+
+1. Read `brainstorm/README.md` and the chosen idea doc (`INTENTGUARD.md` or `OPTIONLENS.md`).
+2. Confirm MVP scope with the user in one paragraph.
+3. Then create a dedicated package dir (e.g. `apps/agentproof/`) — not at repo root.
+
+## Official references
+
+- Docs MCP: `https://docs.injective.network/mcp`
+- Skills: https://github.com/InjectiveLabs/agent-skills
+- Trading MCP: https://github.com/InjectiveLabs/mcp-server

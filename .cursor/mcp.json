@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "injective-docs": {
+      "url": "https://docs.injective.network/mcp"
+    },
+    "injective-trading": {
+      "command": "node",
+      "args": ["vendor/mcp-server/dist/mcp/server.js"],
+      "env": {
+        "INJECTIVE_NETWORK": "testnet"
+      }
+    }
+  }
+}
