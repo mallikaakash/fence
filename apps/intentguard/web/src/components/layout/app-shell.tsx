@@ -28,13 +28,13 @@ export function AppShell({ children }: Props) {
               href="/trade"
               className="text-white/70 hover:text-white transition-all duration-300 font-medium text-sm"
             >
-              Simulate
+              Policy test
             </Link>
             <Link
               href="/history"
               className="text-white/70 hover:text-white transition-all duration-300 font-medium text-sm"
             >
-              Proofs
+              Evidence
             </Link>
             <Link
               href="/portfolio"

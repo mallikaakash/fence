@@ -72,3 +72,14 @@ npm run production:verify
 ```
 
 Deploy: [DEPLOY-GCP.md](./DEPLOY-GCP.md)
+
+## Trust boundaries (product review)
+
+| Enforced on-chain (typed AuthZ) | Enforced off-chain (gateway) |
+|--------------------------------|------------------------------|
+| Message types, market IDs, subaccount, expiry | Notional, leverage, daily margin budget |
+| MsgExec must match grantee | Proposal dry-run before broadcast |
+
+A compromised gateway could in theory bypass notional policy — Route B (Policy Vault) is the long-term hardening path. We do **not** claim notional limits are chain-native.
+
+**Hosted product:** Cloud Run gateway + web proxy; owner `own_…` on server; agent `agt_…` may be in localStorage for convenience. Grantee/owner chain keys never ship to the agent process.

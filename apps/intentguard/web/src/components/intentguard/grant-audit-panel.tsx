@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
-const DEFAULT_GRANTER = "inj1yrvztj7g3x3009uhm03hgsp3fru6e4mdv7jpkz";
+import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
 
 type AuditResponse = {
   ok: boolean;
@@ -12,7 +11,7 @@ type AuditResponse = {
 };
 
 export function GrantAuditPanel() {
-  const [granter, setGranter] = useState(DEFAULT_GRANTER);
+  const [granter, setGranter] = useState("");
   const [mainnet, setMainnet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AuditResponse | null>(null);
@@ -39,9 +38,13 @@ export function GrantAuditPanel() {
   return (
     <div className="space-y-4 text-white">
       <p className="text-sm text-white/70">
-        Compare stock AutoSign grants (GenericAuthorization) vs typed exchange
-        AuthZ. Read-only LCD — no wallet required.
+        Live Injective LCD — decodes grants and flags risky GenericAuthorization.
+        Does not create or revoke grants (use Owner console).
       </p>
+      <OwnerWalletConnect
+        network={mainnet ? "mainnet" : "testnet"}
+        onAddress={setGranter}
+      />
       <div className="flex flex-col sm:flex-row gap-3">
         <input
           aria-label="granter address"

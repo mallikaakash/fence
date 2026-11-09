@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { HomeHeroIntro } from "@/components/intentguard/home-hero";
 import { RiskDisclosure } from "@/components/intentguard/risk-disclosure";
 
 export default function Home() {
@@ -18,18 +19,7 @@ export default function Home() {
                 IntentGuard
               </span>
             </h1>
-            <p className="md:text-xl text-sm text-left mt-2 max-w-2xl text-white/80">
-              Typed exchange AuthZ, an isolated grantee signer, and gateway notional limits — agents
-              use scoped tokens while the sidecar denies out-of-policy proposes before broadcast.
-              Route A on Injective testnet.
-            </p>
-            <p className="text-sm text-left max-w-2xl text-amber-200/90 border border-amber-400/30 rounded-lg px-3 py-2 bg-amber-950/30">
-              Owner console requires a{" "}
-              <span className="font-medium">local sidecar</span> — run{" "}
-              <code className="text-amber-100/80">npm run gateway</code> and{" "}
-              <code className="text-amber-100/80">npm run web:dev</code> on your machine (not via
-              hosted localhost).
-            </p>
+            <HomeHeroIntro />
             <RiskDisclosure compact />
           </div>
 
@@ -51,7 +41,7 @@ export default function Home() {
                 href="/history"
                 className="inline-flex items-center px-4 py-2 border border-white/30 text-white rounded-md font-medium hover:bg-white/10 transition-colors"
               >
-                On-chain proofs
+                Evidence & activity
               </Link>
             </div>
             <div className="flex flex-wrap items-center gap-4">
@@ -99,11 +89,11 @@ export default function Home() {
             />
             <FeatureCard
               title="Notional gate"
-              body="Price × quantity enforced before broadcast; oversize dies with a reason."
+              body="Gateway enforces price × quantity before MsgExec — not a native AuthZ field on Injective."
             />
             <FeatureCard
               title="Kill switch"
-              body="MsgRevoke on-chain — session dead; no alternate signing path in the spike."
+              body="Owner MsgRevoke on-chain; gateway clears grantee key. Residual trust assumptions apply."
             />
           </div>
         </div>

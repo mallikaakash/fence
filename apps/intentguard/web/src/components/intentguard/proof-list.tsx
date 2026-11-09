@@ -41,7 +41,7 @@ export function ProofList() {
   return (
     <div className="space-y-4">
       {loading ? (
-        <p className="text-white/60 text-sm">Loading spike evidence…</p>
+        <p className="text-white/60 text-sm">Loading reference spike bundle…</p>
       ) : null}
       {data?.note ? (
         <p className="text-amber-200/90 text-sm bg-black/30 border border-white/10 rounded px-3 py-2">

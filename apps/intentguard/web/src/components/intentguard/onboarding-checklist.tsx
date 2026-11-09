@@ -4,56 +4,66 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { fetchHostedStatus } from "@/lib/hosted";
 
-const steps = [
+const hostedSteps = [
   {
-    title: "Scan existing grants (free)",
-    body: "Paste granter address — no install.",
+    title: "Grant audit",
+    body: "Live LCD — scan your inj1… for risky GenericAuthorization.",
     href: "/portfolio",
     cta: "Grant Audit",
   },
   {
-    title: "Install sidecar",
-    body: "npm install && npm run gateway in apps/intentguard",
-    copy: "cd apps/intentguard && npm install && npm run gateway",
-    cta: "Copy install",
-  },
-  {
-    title: "Create session (owner)",
-    body: "Owner API key from .intentguard/config.json",
+    title: "Owner console",
+    body: "Hosted gateway proxy — connect Keplr, create session (no local npm).",
     href: "/console",
-    cta: "Owner console",
+    cta: "Open console",
   },
   {
     title: "Sign typed MsgGrant",
-    body: "GET grant-tx-plan or npm run grant:broadcast",
-    href: "/console",
-    cta: "Console → Check grant",
-  },
-  {
-    title: "Give agent token",
-    body: "agt_… only — never grantee key",
-    copy:
-      "INTENTGUARD_URL=http://127.0.0.1:8787 AGENT_TOKEN=agt_… node examples/agent-propose.mjs",
-    cta: "Copy agent cmd",
-  },
-  {
-    title: "Policy test",
-    body: "Oversize notional must deny",
-    href: "/trade",
-    cta: "Simulator",
-  },
-  {
-    title: "Optional execute",
-    body: "INTENTGUARD_EXECUTE=1 after grant-status ready",
+    body: "Grant tx plan → Keplr broadcast on testnet (funded wallet).",
     href: "/console",
     cta: "Console",
   },
   {
-    title: "Verify release",
-    body: "CI-style smoke before mainnet",
-    copy: "npm run product:smoke && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify && npm run ux:verify && npm run agent:verify && npm run legal:verify",
-    cta: "Copy verify",
+    title: "Verify grant on-chain",
+    body: "Check grant status in console against LCD.",
+    href: "/console",
+    cta: "Check grant",
   },
+  {
+    title: "Agent token",
+    body: "Copy agt_… to your agent; agents never get grantee keys.",
+    href: "/console",
+    cta: "Console",
+  },
+  {
+    title: "Live policy test",
+    body: "POST /v1/propose via sidecar (not offline mirror).",
+    href: "/trade",
+    cta: "Policy test",
+  },
+  {
+    title: "Evidence",
+    body: "Gateway audit log + explorer links for broadcasts.",
+    href: "/history",
+    cta: "Activity",
+  },
+  {
+    title: "Optional execute",
+    body: "Enable INTENTGUARD_EXECUTE on gateway only after grant ready.",
+    href: "/limitations",
+    cta: "Limits",
+  },
+];
+
+const selfHostedSteps = [
+  ...hostedSteps.slice(0, 1),
+  {
+    title: "Run sidecar",
+    body: "Self-host: npm run gateway or Docker (see INSTALL.md).",
+    copy: "cd apps/intentguard && npm run gateway",
+    cta: "Copy install",
+  },
+  ...hostedSteps.slice(1),
 ];
 
 export function OnboardingChecklist() {
@@ -76,12 +86,12 @@ export function OnboardingChecklist() {
       )}
       {hosted && proxyReady && (
         <p className="text-[#c8ecf4]/90 text-sm border border-[#75bfcf]/30 rounded-lg px-3 py-2 bg-[#0d3d4a]/40">
-          Hosted production — use <Link href="/console" className="text-[#75bfcf] underline">/console</Link>{" "}
-          for steps 2–7 (Vercel proxy to your sidecar).
+          Self-service on this URL — gateway runs on Cloud Run; owner auth via server proxy
+          (no owner key in the browser).
         </p>
       )}
       <ol className="space-y-4">
-        {steps.map((s, i) => (
+        {(hosted && proxyReady ? hostedSteps : selfHostedSteps).map((s, i) => (
           <li
             key={s.title}
             className="flex gap-4 items-start border-b border-white/5 pb-4 last:border-0"
@@ -90,15 +100,15 @@ export function OnboardingChecklist() {
             <div className="flex-1 min-w-0">
               <div className="text-white font-medium text-sm">{s.title}</div>
               <p className="text-white/55 text-xs mt-1">{s.body}</p>
-              {s.copy ? (
+              {"copy" in s && s.copy ? (
                 <button
                   type="button"
                   className="text-xs mt-2 px-2 py-1 rounded border border-white/20 text-white/70 hover:bg-white/10"
-                  onClick={() => navigator.clipboard.writeText(s.copy!)}
+                  onClick={() => navigator.clipboard.writeText(s.copy)}
                 >
                   {s.cta}
                 </button>
-              ) : s.href ? (
+              ) : "href" in s && s.href ? (
                 <Link
                   href={s.href}
                   className="inline-block text-xs mt-2 px-2 py-1 rounded bg-[#75bfcf]/20 text-[#75bfcf] border border-[#75bfcf]/40"
