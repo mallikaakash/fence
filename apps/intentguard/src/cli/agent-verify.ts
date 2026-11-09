@@ -14,8 +14,12 @@ const repoRoot = join(root, "../..");
 const required = [
   [join(repoRoot, "docs/AGENTS.md"), "AGENTS.md"],
   [join(root, "src/mcp/server.ts"), "MCP server"],
+  [join(root, "src/mcp/agent-server.ts"), "agent MCP server"],
+  [join(root, "src/agent-sdk/index.ts"), "agent SDK entry"],
   [join(root, "src/client/gateway.ts"), "gateway client"],
   [join(root, "examples/agent-propose.mjs"), "agent-propose example"],
+  [join(root, "examples/agent-bot.mjs"), "agent-bot example"],
+  [join(root, "examples/agent-curl.sh"), "agent-curl reference"],
   [join(root, "src/server/openapi.ts"), "openapi"],
   [join(root, "src/agent/api-envelope.ts"), "api envelope"],
 ];
@@ -35,11 +39,18 @@ assert.ok(doc.paths["/v1/execute"]);
 
 const mcp = readFileSync(join(root, "src/mcp/server.ts"), "utf8");
 assert.match(mcp, /intentguard_gateway_propose/);
+assert.match(mcp, /intentguard_gateway_execute/);
+assert.match(mcp, /intentguard_gateway_session/);
 assert.match(mcp, /intentguard_gateway_health/);
 assert.match(mcp, /intentguard_propose/);
 
+const agentMcp = readFileSync(join(root, "src/mcp/agent-server.ts"), "utf8");
+assert.match(agentMcp, /intentguard_agent_propose/);
+assert.match(agentMcp, /intentguard_agent_execute/);
+
 const client = readFileSync(join(root, "src/client/gateway.ts"), "utf8");
 assert.match(client, /idempotencyKey/i);
+assert.match(client, /agentSession/);
 
 const agents = readFileSync(join(repoRoot, "docs/AGENTS.md"), "utf8");
 assert.match(agents, /policy_check/);

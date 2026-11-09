@@ -134,6 +134,37 @@ server.tool(
   },
 );
 
+async function gatewayExecute(intent: TradeIntent): Promise<unknown> {
+  return gatewayFetch("/v1/execute", {
+    method: "POST",
+    body: JSON.stringify({ intent }),
+  });
+}
+
+server.tool(
+  "intentguard_gateway_execute",
+  "Live POST /v1/execute after propose allowed. Requires sidecar INTENTGUARD_EXECUTE=1 and on-chain grant. Agent token only — never owner/grantee keys. Set INTENTGUARD_GATEWAY_URL + INTENTGUARD_AGENT_TOKEN.",
+  { intent: intentSchema },
+  async ({ intent }) => {
+    const result = await gatewayExecute(intent as TradeIntent);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  },
+);
+
+server.tool(
+  "intentguard_gateway_session",
+  "GET /v1/agent/session — daily margin remaining and session policy summary (agent Bearer agt_… only).",
+  {},
+  async () => {
+    const result = await gatewayFetch("/v1/agent/session", { method: "GET" });
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  },
+);
+
 server.tool(
   "intentguard_gateway_health",
   "Query running sidecar GET /health (network, executeEnabled). Requires INTENTGUARD_GATEWAY_URL (+ agent token in env for consistency).",

@@ -19,6 +19,17 @@
       "env": {
         "INJECTIVE_NETWORK": "testnet"
       }
+    },
+    "intentguard-agent": {
+      "command": "node",
+      "args": [
+        "--experimental-strip-types",
+        "apps/intentguard/src/mcp/agent-server.ts"
+      ],
+      "env": {
+        "INJECTIVE_NETWORK": "testnet",
+        "INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway"
+      }
     }
   }
 }

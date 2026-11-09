@@ -28,6 +28,8 @@ async function request(
 export function createGatewayClient(opts: GatewayClientOptions) {
   return {
     health: () => request(opts, "/health", { method: "GET" }),
+    agentSession: () =>
+      request(opts, "/v1/agent/session", { method: "GET", asAgent: true }),
     openApi: () => request(opts, "/v1/openapi.json", { method: "GET" }),
     propose: (intent: unknown, extra?: { idempotencyKey?: string }) =>
       request(opts, "/v1/propose", {

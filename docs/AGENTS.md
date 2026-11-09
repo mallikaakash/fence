@@ -57,24 +57,57 @@ INTENTGUARD_WEBHOOK_URL=https://your-orchestrator/hooks/intentguard
 
 JSON POST on `propose_allowed`, `propose_denied`, `execute_allowed`, `execute_denied`.
 
-## Cursor MCP (`intentguard-policy`)
+## Agent SDK
 
-| Tool | Mode |
+```typescript
+import {
+  createGatewayClient,
+  DEFAULT_INJ_PERP_MARKET_ID,
+} from "../apps/intentguard/src/agent-sdk/index.ts";
+
+const client = createGatewayClient({
+  baseUrl: process.env.INTENTGUARD_GATEWAY_URL!,
+  agentApiToken: process.env.INTENTGUARD_AGENT_TOKEN,
+});
+
+await client.agentSession();
+await client.propose({ marketId: DEFAULT_INJ_PERP_MARKET_ID, margin: "2", leverage: 2 });
+await client.execute({ ... });
+```
+
+Examples: `apps/intentguard/examples/` (`agent-bot.mjs`, `agent-curl.sh`).
+
+## Cursor MCP
+
+### `intentguard-agent` (reference — agt_ + live API only)
+
+| Tool | HTTP |
 |------|------|
-| `intentguard_propose` | Offline policy |
-| `intentguard_gateway_propose` | Live sidecar (env below) |
-| `intentguard_gateway_health` | Sidecar health |
-| `intentguard_audit_grants` | LCD grant risk |
-| `intentguard_plan_grant` | Typed grant plan JSON |
+| `intentguard_agent_health` | `GET /health` |
+| `intentguard_agent_session` | `GET /v1/agent/session` |
+| `intentguard_agent_propose` | `POST /v1/propose` |
+| `intentguard_agent_execute` | `POST /v1/execute` |
 
 ```json
-"intentguard-policy": {
+"intentguard-agent": {
   "env": {
-    "INTENTGUARD_GATEWAY_URL": "http://127.0.0.1:8787",
+    "INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway",
     "INTENTGUARD_AGENT_TOKEN": "agt_…"
   }
 }
 ```
+
+### `intentguard-policy` (offline policy + grant audit + same live tools)
+
+| Tool | Mode |
+|------|------|
+| `intentguard_propose` | Offline policy |
+| `intentguard_gateway_propose` | Live `POST /v1/propose` |
+| `intentguard_gateway_execute` | Live `POST /v1/execute` |
+| `intentguard_gateway_session` | Live `GET /v1/agent/session` |
+| `intentguard_gateway_health` | Sidecar health |
+| `intentguard_audit_grants` | LCD grant risk |
+| `intentguard_plan_grant` | Typed grant plan JSON |
 
 ## CLI example
 

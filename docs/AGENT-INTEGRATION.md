@@ -89,7 +89,19 @@ HTTP `429` with `retryAfterSeconds`.
 
 ## MCP (Cursor)
 
-Workspace MCP **`intentguard-policy`** (when gateway is configured): tools such as **`intentguard_propose`** / **`intentguard_audit_grants`** — read-only propose path without importing grantee keys into chat config.
+| Server | When |
+|--------|------|
+| **`intentguard-agent`** | Reference bot — only `agt_` + `/v1/propose` \| `/v1/execute` \| session |
+| **`intentguard-policy`** | Plus offline policy, grant audit, grant plans |
+
+Set in MCP env (never commit tokens):
+
+```json
+"INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway",
+"INTENTGUARD_AGENT_TOKEN": "agt_…"
+```
+
+SDK + scripts: `apps/intentguard/examples/README.md` · `npm run agent:verify` in `apps/intentguard`.
 
 Trading MCP **`authz_grant`** is **not** a substitute for IntentGuard policy; use IntentGuard for **capped** agent sessions.
 
