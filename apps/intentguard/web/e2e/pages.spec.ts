@@ -20,8 +20,11 @@ test.describe("IntentGuard pages", () => {
       await expect(page.getByRole("heading", { level: 1 })).toContainText(heading, {
         timeout: 45_000,
       });
-      for (const label of PRIMARY_NAV) {
-        await expect(page.getByRole("navigation", { name: "Main" }).getByRole("link", { name: label })).toBeVisible();
+      const navLabels =
+        path === "/" ? PRIMARY_NAV.filter((l) => l !== "Home") : PRIMARY_NAV;
+      const nav = page.getByRole("navigation", { name: "Main" }).first();
+      for (const label of navLabels) {
+        await expect(nav.getByRole("link", { name: label })).toBeVisible();
       }
       await expect(page.getByRole("contentinfo")).toContainText(/testnet/i);
     });

@@ -24,7 +24,7 @@ export function SiteNav() {
       >
         <div className="motion-nav__pill backdrop-blur-sm bg-white/5 border border-white/10 rounded-full shadow-2xl px-10 py-4">
           <div className="flex items-center justify-center space-x-10">
-            {LINKS.map((item) => {
+            {LINKS.filter((item) => !(item.href === "/" && pathname === "/")).map((item) => {
               const active =
                 item.href === "/"
                   ? pathname === "/"

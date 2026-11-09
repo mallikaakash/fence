@@ -11,11 +11,6 @@ export default function Home() {
         <HeroStagger>
           <div className="flex flex-col items-start justify-center max-w-5xl space-y-6">
             <div className="hero-stagger__item">
-              <p className="mb-5">
-                <span className="motion-pill inline-flex items-center px-2 py-1 text-[0.65rem] tracking-[0.35em] uppercase text-white/80 bg-white/10 rounded-full border border-white/20">
-                  IntentGuard · Injective testnet
-                </span>
-              </p>
               <h1 className="md:text-5xl text-3xl font-sans font-thin uppercase text-left mb-4 inline-block">
                 <span className="motion-title-chip bg-orange-400 px-2 rounded-md text-black shadow-md">
                   IntentGuard
@@ -24,26 +19,30 @@ export default function Home() {
               <HomeHeroIntro />
             </div>
 
-            <div className="hero-stagger__item flex flex-col gap-3">
+            <div className="hero-stagger__item flex flex-col gap-4">
               <div className="flex flex-wrap items-center gap-4">
                 <Link href="/start" className="cta-primary motion-cta">
                   Protect my wallet
                 </Link>
-                <Link href="/trade" className="cta-secondary motion-cta">
-                  Try your limits
+                <Link href="/limitations" className="cta-secondary motion-cta">
+                  How it works
                 </Link>
-                <Link href="/agent" className="cta-secondary motion-cta">
+              </div>
+              <p className="text-white/50 text-sm max-w-2xl">
+                Already set up? Use the menu for{" "}
+                <Link href="/trade" className="text-[#75bfcf] underline">
+                  Try limits
+                </Link>
+                ,{" "}
+                <Link href="/agent" className="text-[#75bfcf] underline">
                   Demo agent
                 </Link>
-              </div>
-              <div className="flex flex-wrap items-center gap-4">
-                <Link href="/portfolio" className="cta-secondary motion-cta">
+                , or{" "}
+                <Link href="/portfolio" className="text-[#75bfcf] underline">
                   Grant audit
                 </Link>
-                <span className="motion-badge inline-flex items-center px-2 py-1 bg-[#75bfcf] md:text-sm text-xs text-black rounded-md shadow">
-                  Powered by Injective typed AuthZ
-                </span>
-              </div>
+                .
+              </p>
             </div>
           </div>
         </HeroStagger>
