@@ -16,6 +16,7 @@
     "intentguard:smoke": "npm run product:smoke --prefix apps/intentguard",
     "intentguard:security": "npm run security:verify --prefix apps/intentguard",
     "intentguard:e2e": "npm run e2e:protocol --prefix apps/intentguard",
+    "intentguard:gtm": "npm run gtm:verify --prefix apps/intentguard",
     "vercel-build": "npm install --prefix apps/intentguard/web && npm run build --prefix apps/intentguard/web"
   },
   "engines": {

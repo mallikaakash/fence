@@ -17,6 +17,12 @@ export function AppShell({ children }: Props) {
               Home
             </Link>
             <Link
+              href="/start"
+              className="text-white/70 hover:text-white transition-all duration-300 font-medium text-sm"
+            >
+              Start
+            </Link>
+            <Link
               href="/trade"
               className="text-white/70 hover:text-white transition-all duration-300 font-medium text-sm"
             >

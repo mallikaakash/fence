@@ -42,4 +42,21 @@ Proofs page uses committed `public/spike/*.json` on Vercel (no local `.spike/`).
 
 ## Env
 
-No secrets required for the demo UI. Grant audit calls public Injective LCD from serverless functions.
+| Variable | Required | Purpose |
+|----------|----------|---------|
+| (none) | for demo | `/`, `/trade`, `/portfolio`, `/start`, `/history` — public LCD for grant audit |
+
+### Optional — remote sidecar proxy (design partners)
+
+Set on Vercel so `/console` can use **Vercel proxy** (`/api/gateway`) without pasting the owner key in the browser:
+
+| Variable | Example |
+|----------|---------|
+| `INTENTGUARD_GATEWAY_URL` | `https://your-tunnel-or-vpc:8787` (must be reachable from Vercel) |
+| `INTENTGUARD_OWNER_API_KEY` | `own_…` from your sidecar |
+
+Agent calls still send `Authorization: Bearer agt_…` from the client (localStorage). Owner routes use the server-injected owner key when the client does not send `own_…`.
+
+Local development: run `npm run gateway` + `npm run web:dev`; use `http://127.0.0.1:8787` in Console (not the proxy).
+
+Routes after deploy: `/`, `/start`, `/trade`, `/console`, `/portfolio`, `/history`, `/api/gateway/*` (if proxy env set).

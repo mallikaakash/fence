@@ -6,6 +6,7 @@ import {
   gatewayAuditEvents,
   gatewayCreateSession,
   gatewayGrantStatus,
+  gatewayGrantTxPlan,
   gatewayHealth,
   gatewayListSessions,
   gatewayPropose,
@@ -81,6 +82,7 @@ export function OwnerConsole() {
     Record<string, { ready: boolean; scopeMatch: boolean; issues: string[] }>
   >({});
   const [ownerInj, setOwnerInj] = useState("");
+  const [grantTxPlanById, setGrantTxPlanById] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSettings(loadGatewaySettings());
@@ -164,6 +166,37 @@ export function OwnerConsole() {
     }
   }
 
+  async function loadGrantTxPlan(sessionId: string) {
+    setBusy(true);
+    try {
+      const { res, json } = await gatewayGrantTxPlan(settings, sessionId);
+      if (res.ok) {
+        setGrantTxPlanById((prev) => ({
+          ...prev,
+          [sessionId]: JSON.stringify(json, null, 2),
+        }));
+      } else {
+        alert(JSON.stringify(json));
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function useLocalSidecar() {
+    persist({ baseUrl: "http://127.0.0.1:8787" });
+  }
+
+  function useHostedProxy() {
+    if (typeof window === "undefined") return;
+    persist({
+      baseUrl: `${window.location.origin}/api/gateway`,
+      ownerApiKey: "",
+    });
+  }
+
+  const proxyMode = settings.baseUrl.includes("/api/gateway");
+
   async function checkGrant(sessionId: string) {
     setBusy(true);
     try {
@@ -239,11 +272,27 @@ export function OwnerConsole() {
     <section className="space-y-8 max-w-3xl mx-auto px-6 pt-32 pb-20">
       <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
       <p className="text-white/70 text-sm">
-        Connects to your sidecar at <code className="text-white/90">http://127.0.0.1:8787</code>{" "}
-        while <code className="text-white/90">npm run gateway</code> is running on this machine.
-        Owner/agent secrets use browser localStorage — prefer this page via{" "}
-        <code className="text-white/90">npm run web:dev</code>, not hosted Vercel.
+        {proxyMode
+          ? "Using hosted gateway proxy — owner key is injected on the server when INTENTGUARD_OWNER_API_KEY is set on Vercel."
+          : "Default: local sidecar at 127.0.0.1:8787 while npm run gateway runs on this machine. Prefer npm run web:dev for owner keys in localStorage."}
       </p>
+
+      <div className="flex flex-wrap gap-2 text-xs">
+        <button
+          type="button"
+          className="px-3 py-1 rounded-full border border-white/20 text-white/80"
+          onClick={useLocalSidecar}
+        >
+          Local sidecar
+        </button>
+        <button
+          type="button"
+          className="px-3 py-1 rounded-full border border-[#75bfcf]/40 text-[#75bfcf]"
+          onClick={useHostedProxy}
+        >
+          Vercel proxy (/api/gateway)
+        </button>
+      </div>
 
       <div className="space-y-3">
         <div>
@@ -255,12 +304,15 @@ export function OwnerConsole() {
           />
         </div>
         <div>
-          <label className="block text-white/60 text-xs mb-1">Owner API key (own_…)</label>
+          <label className="block text-white/60 text-xs mb-1">
+            Owner API key (own_…){proxyMode ? " — optional via server proxy" : ""}
+          </label>
           <input
             type="password"
             className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
             value={settings.ownerApiKey}
             onChange={(e) => persist({ ownerApiKey: e.target.value })}
+            placeholder={proxyMode ? "Leave empty if Vercel has INTENTGUARD_OWNER_API_KEY" : ""}
           />
         </div>
         <div>
@@ -389,6 +441,11 @@ export function OwnerConsole() {
                       : "pending"}
                 </span>
               )}
+              {grantTxPlanById[s.sessionId] && (
+                <pre className="text-[9px] text-white/45 max-w-xs max-h-24 overflow-auto mt-1 text-left">
+                  {grantTxPlanById[s.sessionId].slice(0, 400)}…
+                </pre>
+              )}
               {!s.revoked && (
                 <>
                   <button
@@ -397,6 +454,13 @@ export function OwnerConsole() {
                     onClick={() => checkGrant(s.sessionId)}
                   >
                     Check grant
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-white/70 border border-white/20 px-3 py-1 rounded-full"
+                    onClick={() => loadGrantTxPlan(s.sessionId)}
+                  >
+                    Grant tx plan
                   </button>
                   <button
                     type="button"

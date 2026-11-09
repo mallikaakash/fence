@@ -11,7 +11,9 @@
 
 State: `apps/intentguard/.intentguard/` (gitignored) — sessions + audit JSON.
 
-Customer install guide: [INSTALL.md](./INSTALL.md)
+Customer install guide: [INSTALL.md](./INSTALL.md)  
+Buyer paths & wedges: [GETTING-STARTED.md](./GETTING-STARTED.md) · [PRICING.md](./PRICING.md)  
+Hosted web: [VERCEL.md](./VERCEL.md) — `/start` onboarding, grant auditor, optional gateway proxy.
 
 ## Quick start
 
@@ -80,7 +82,7 @@ OpenAPI stub: `GET /v1/openapi.json`
 
 1. **Execute path** — optional env `INTENTGUARD_EXECUTE=1` + owner/grantee keystores for MsgExec (integrator-controlled).
 2. **Webhooks** — `propose_denied`, `session_revoked`.
-3. **Owner console** — Vercel UI talks to gateway URL (not in-browser keys).
+3. **Owner console** — `/console` + optional Vercel `/api/gateway` proxy (`INTENTGUARD_GATEWAY_URL`); local keys remain default for self-serve.
 4. **Design partner** — one team on mainnet with real agent traffic.
 
 ## What we are not claiming yet
@@ -90,3 +92,14 @@ OpenAPI stub: `GET /v1/openapi.json`
 - Route B vault as default  
 
 Route A sidecar + typed grants + notional policy is the product core.
+
+## Release verification (v0.1.x)
+
+```bash
+cd apps/intentguard
+npm run check && npm test
+npm run product:smoke && npm run security:verify && npm run e2e:protocol && npm run gtm:verify
+npm run web:build
+```
+
+From repo root: `npm run intentguard:smoke`, `intentguard:security`, `intentguard:e2e`, `intentguard:gtm`.

@@ -1,7 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SPIKE_MARKET_ID } from "@/lib/constants";
+import { loadGatewaySettings } from "@/lib/gateway/storage";
+import { gatewayPropose } from "@/lib/gateway/client";
 
 type ProposeResponse = {
   ok: boolean;
@@ -20,6 +22,13 @@ export function PolicySimulator() {
   const [maxNotional, setMaxNotional] = useState("50");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<ProposeResponse | null>(null);
+  const [useSidecar, setUseSidecar] = useState(false);
+  const [sidecarReady, setSidecarReady] = useState(false);
+
+  useEffect(() => {
+    const s = loadGatewaySettings();
+    setSidecarReady(Boolean(s.agentApiToken && s.baseUrl));
+  }, []);
 
   const notionalPreview = useMemo(() => {
     const p = Number(price);
@@ -37,25 +46,36 @@ export function PolicySimulator() {
         : { price: "1", quantity: "2", margin: "5", leverage: 2 };
 
     try {
-      const res = await fetch("/api/propose", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          policy: {
-            marketIds: [SPIKE_MARKET_ID],
-            maxOrderNotional: maxNotional,
-            maxMarginPerOrder: "100",
-            maxLeverage: 5,
-            dailyMarginBudget: "500",
-            version: 1,
-          },
-          intent: {
-            marketId: SPIKE_MARKET_ID,
-            ...payload,
-          },
-        }),
-      });
-      setResult((await res.json()) as ProposeResponse);
+      const intent = {
+        marketId: SPIKE_MARKET_ID,
+        ...payload,
+      };
+      if (useSidecar && sidecarReady) {
+        const s = loadGatewaySettings();
+        const { res, json } = await gatewayPropose(s, intent);
+        setResult({
+          ok: res.ok,
+          status: (json as { status?: string }).status as "allowed" | "denied",
+          reasons: (json as { decisionReasons?: string[] }).decisionReasons,
+        });
+      } else {
+        const res = await fetch("/api/propose", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            policy: {
+              marketIds: [SPIKE_MARKET_ID],
+              maxOrderNotional: maxNotional,
+              maxMarginPerOrder: "100",
+              maxLeverage: 5,
+              dailyMarginBudget: "500",
+              version: 1,
+            },
+            intent,
+          }),
+        });
+        setResult((await res.json()) as ProposeResponse);
+      }
     } catch (e) {
       setResult({
         ok: false,
@@ -70,28 +90,39 @@ export function PolicySimulator() {
     setBusy(true);
     setResult(null);
     try {
-      const res = await fetch("/api/propose", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          policy: {
-            marketIds: [SPIKE_MARKET_ID],
-            maxOrderNotional: maxNotional,
-            maxMarginPerOrder: "100",
-            maxLeverage: 5,
-            dailyMarginBudget: "500",
-            version: 1,
-          },
-          intent: {
-            marketId: SPIKE_MARKET_ID,
-            margin,
-            leverage: Number(leverage),
-            price,
-            quantity,
-          },
-        }),
-      });
-      setResult((await res.json()) as ProposeResponse);
+      const intent = {
+        marketId: SPIKE_MARKET_ID,
+        margin,
+        leverage: Number(leverage),
+        price,
+        quantity,
+      };
+      if (useSidecar && sidecarReady) {
+        const s = loadGatewaySettings();
+        const { res, json } = await gatewayPropose(s, intent);
+        setResult({
+          ok: res.ok,
+          status: (json as { status?: string }).status as "allowed" | "denied",
+          reasons: (json as { decisionReasons?: string[] }).decisionReasons,
+        });
+      } else {
+        const res = await fetch("/api/propose", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            policy: {
+              marketIds: [SPIKE_MARKET_ID],
+              maxOrderNotional: maxNotional,
+              maxMarginPerOrder: "100",
+              maxLeverage: 5,
+              dailyMarginBudget: "500",
+              version: 1,
+            },
+            intent,
+          }),
+        });
+        setResult((await res.json()) as ProposeResponse);
+      }
     } catch (e) {
       setResult({
         ok: false,
@@ -112,9 +143,22 @@ export function PolicySimulator() {
             </span>
           </h1>
           <p className="text-white/70 text-sm mt-2">
-            Offline policy demo — for production use sidecar{" "}
-            <code className="text-white/90">POST /v1/propose</code> (see Console)
+            {useSidecar
+              ? "Live sidecar propose (gateway session policy)"
+              : "Offline demo — enable sidecar after /console setup"}
           </p>
+          <label className="flex items-center gap-2 text-xs text-white/70 mt-2">
+            <input
+              type="checkbox"
+              checked={useSidecar}
+              disabled={!sidecarReady}
+              onChange={(e) => setUseSidecar(e.target.checked)}
+            />
+            Use sidecar
+            {!sidecarReady && (
+              <span className="text-amber-200/80">— set agent token in Console</span>
+            )}
+          </label>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

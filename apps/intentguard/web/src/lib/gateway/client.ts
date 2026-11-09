@@ -35,6 +35,15 @@ export async function gatewayCreateSession(
   });
 }
 
+export async function gatewayGrantTxPlan(
+  settings: GatewaySettings,
+  sessionId: string,
+) {
+  return gwFetch(settings, `/v1/sessions/${sessionId}/grant-tx-plan`, {
+    method: "GET",
+  });
+}
+
 export async function gatewayGrantStatus(
   settings: GatewaySettings,
   sessionId: string,

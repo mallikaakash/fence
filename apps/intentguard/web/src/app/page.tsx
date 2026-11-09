@@ -34,6 +34,12 @@ export default function Home() {
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-4">
               <Link
+                href="/start"
+                className="inline-flex items-center px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-white/90 transition-colors"
+              >
+                Get started
+              </Link>
+              <Link
                 href="/trade"
                 className="inline-flex items-center px-4 py-2 bg-[#75bfcf] text-black rounded-md font-medium hover:bg-[#75bfcf]/80 transition-colors"
               >
@@ -59,6 +65,14 @@ export default function Home() {
               >
                 Grant auditor
               </Link>
+              <a
+                href="https://github.com/mallikaakash/injective-buildathon/blob/main/docs/PRICING.md"
+                className="text-sm text-white/60 underline hover:text-white"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Pricing & tiers
+              </a>
               <span className="group relative text-black inline-flex items-center px-2 py-1 bg-[#75bfcf] md:text-sm text-xs rounded-md shadow">
                 Powered by Injective typed AuthZ
               </span>
