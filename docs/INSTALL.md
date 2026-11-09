@@ -107,8 +107,11 @@ Hosted Vercel: set `INTENTGUARD_GATEWAY_URL` + `INTENTGUARD_OWNER_API_KEY` only 
 
 ```bash
 npm run product:smoke   # from apps/intentguard
+npm run security:verify
 npm test
 ```
+
+Production: set `INTENTGUARD_DATA_KEY` (see `.env.example`) and read [THREAT-MODEL.md](./THREAT-MODEL.md).
 
 From repo root:
 

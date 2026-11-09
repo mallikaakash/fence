@@ -7,28 +7,66 @@ import { fetchGranterGrants } from "../authz/fetchGrants.ts";
 import { scoreGrants } from "../authz/score.ts";
 import { formatGrantAuditReport } from "../authz/formatAudit.ts";
 import { TRADING_SUBACCOUNT_INDEX } from "../chain/keys.ts";
-import { loadConfig } from "./config.ts";
-import { FileStore } from "./store.ts";
+import { loadConfig, rotateOwnerApiKey, type GatewayConfig } from "./config.ts";
+import { SecureFileStore } from "./secureStore.ts";
 import { executeAgentIntent } from "./execute.ts";
 import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
+import { safeEqual } from "./auth.ts";
+import { RateLimiter } from "./rateLimit.ts";
 
 type Json = Record<string, unknown>;
 
-async function readBody(req: IncomingMessage): Promise<unknown> {
-  const chunks: Buffer[] = [];
-  for await (const c of req) chunks.push(c as Buffer);
-  const text = Buffer.concat(chunks).toString("utf8");
-  if (!text) return {};
-  return JSON.parse(text) as unknown;
+class HttpError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
 }
 
-function send(res: ServerResponse, status: number, body: Json) {
-  res.writeHead(status, {
+async function readBody(
+  req: IncomingMessage,
+  maxBytes: number,
+): Promise<unknown> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  for await (const c of req) {
+    const buf = c as Buffer;
+    total += buf.length;
+    if (total > maxBytes) {
+      throw new HttpError(413, "request body too large");
+    }
+    chunks.push(buf);
+  }
+  const text = Buffer.concat(chunks).toString("utf8");
+  if (!text) return {};
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new HttpError(400, "invalid JSON body");
+  }
+}
+
+function sendJson(
+  req: IncomingMessage,
+  res: ServerResponse,
+  config: GatewayConfig,
+  status: number,
+  body: Json,
+) {
+  const headers: Record<string, string> = {
     "content-type": "application/json",
-    "access-control-allow-origin": "*",
+    "x-content-type-options": "nosniff",
+    "cache-control": "no-store",
     "access-control-allow-headers": "authorization, content-type",
     "access-control-allow-methods": "GET, POST, OPTIONS",
-  });
+  };
+  const origin = req.headers.origin;
+  if (origin && config.corsOrigins.includes(origin)) {
+    headers["access-control-allow-origin"] = origin;
+    headers["vary"] = "Origin";
+  }
+  res.writeHead(status, headers);
   res.end(JSON.stringify(body));
 }
 
@@ -40,16 +78,23 @@ function bearer(req: IncomingMessage): string | null {
 
 export function startGatewayServer() {
   const config = loadConfig();
-  const store = new FileStore(config.dataDir);
+  let ownerApiKey = config.ownerApiKey;
+  const store = new SecureFileStore(config.dataDir, config.dataKey);
   const gateway = new IntentGuardGateway();
+  const limiter = new RateLimiter({
+    windowMs: 60_000,
+    maxRequests: config.rateLimitPerMinute,
+  });
+
+  const send = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    status: number,
+    body: Json,
+  ) => sendJson(req, res, config, status, body);
 
   function persist() {
-    store.save({
-      version: 1,
-      updatedAt: new Date().toISOString(),
-      sessions: gateway.exportSessions(),
-      audit: gateway.audit.list(),
-    });
+    store.save(gateway.exportSessions(), gateway.audit.list());
   }
 
   function hydrate() {
@@ -61,28 +106,38 @@ export function startGatewayServer() {
   hydrate();
 
   const server = createServer(async (req, res) => {
-    if (!req.url || !req.method) return send(res, 400, { error: "bad request" });
+    if (!req.url || !req.method) return send(req, res, 400, { error: "bad request" });
 
-    if (req.method === "OPTIONS") return send(res, 204, {});
+    if (req.method === "OPTIONS") return send(req, res, 204, {});
 
     const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
     const path = url.pathname;
+    const clientIp = req.socket.remoteAddress ?? "unknown";
+    const rateKey = `${clientIp}:${path.split("/").slice(0, 3).join("/")}`;
+    const retry = limiter.check(rateKey);
+    if (retry !== null) {
+      return send(req, res, 429, {
+        error: "rate limit exceeded",
+        retryAfterSeconds: retry,
+      });
+    }
 
     try {
       if (req.method === "GET" && path === "/health") {
-        return send(res, 200, {
+        return send(req, res, 200, {
           ok: true,
           service: "intentguard-gateway",
-          version: "0.1.2",
+          version: "0.1.3",
           executeEnabled: config.executeEnabled,
           network: config.network,
           requireOnChainGrant: config.requireOnChainGrant,
+          encryptionAtRest: Boolean(config.dataKey),
           sessions: gateway.exportSessions().length,
         });
       }
 
       if (req.method === "GET" && path === "/v1/openapi.json") {
-        return send(res, 200, {
+        return send(req, res, 200, {
           openapi: "3.0.0",
           info: { title: "IntentGuard Gateway", version: "0.1.0" },
           paths: {
@@ -102,23 +157,39 @@ export function startGatewayServer() {
             "/v1/grants/plan": { post: { summary: "Typed grant plan" } },
             "/v1/audit/grants": { get: { summary: "Grant auditor (public)" } },
             "/v1/audit/events": { get: { summary: "Audit log (owner)" } },
+            "/v1/owner/rotate-api-key": {
+              post: { summary: "Rotate owner HTTP API key" },
+            },
           },
         });
       }
 
       const owner = bearer(req);
-      const isOwner = owner === config.ownerApiKey;
+      const isOwner = Boolean(owner && safeEqual(owner, ownerApiKey));
+
+      if (req.method === "POST" && path === "/v1/owner/rotate-api-key") {
+        if (!isOwner) {
+          return send(req, res, 401, { error: "owner authorization required" });
+        }
+        ownerApiKey = rotateOwnerApiKey(config.configPath);
+        gateway.audit.append("owner_key_rotated", "Owner HTTP API key rotated", {});
+        persist();
+        return send(req, res, 200, {
+          ownerApiKey,
+          note: "Update automations and console with the new key",
+        });
+      }
 
       if (req.method === "POST" && path === "/v1/sessions") {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
 
-        const body = (await readBody(req)) as {
+        const body = (await readBody(req, config.maxBodyBytes)) as {
           policy?: IntentGuardPolicy;
           ownerInjectiveAddress?: string;
           subaccountIndex?: number;
         };
         if (!body.policy?.marketIds?.length) {
-          return send(res, 400, { error: "policy.marketIds required" });
+          return send(req, res, 400, { error: "policy.marketIds required" });
         }
 
         const granteePk = PrivateKey.generate().privateKey as PrivateKey;
@@ -130,7 +201,7 @@ export function startGatewayServer() {
           try {
             subaccountId = getSubaccountId(body.ownerInjectiveAddress, subIndex);
           } catch {
-            return send(res, 400, {
+            return send(req, res, 400, {
               error: "ownerInjectiveAddress must be a valid inj1… bech32 address",
             });
           }
@@ -153,9 +224,11 @@ export function startGatewayServer() {
 
         persist();
 
-        return send(res, 201, {
+        return send(req, res, 201, {
           session: view,
           agentApiToken: agent.apiToken,
+          agentTokenExpiresAt:
+            gateway.getSessionRecord(view.sessionId)?.agentTokenExpiresAt,
           agentTokenNote:
             "Deliver agentApiToken to the agent runtime only — never commit it.",
           ownerInjectiveAddress: ownerAddr,
@@ -165,79 +238,83 @@ export function startGatewayServer() {
       }
 
       if (req.method === "GET" && path === "/v1/sessions") {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
-        return send(res, 200, { sessions: gateway.listPublicSessions() });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        return send(req, res, 200, { sessions: gateway.listPublicSessions() });
       }
 
       const sessionMatch = path.match(/^\/v1\/sessions\/([^/]+)$/);
       if (req.method === "GET" && sessionMatch) {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
         const id = sessionMatch[1]!;
         const view = gateway.getPublicSession(id);
-        if (!view) return send(res, 404, { error: "session not found" });
-        return send(res, 200, { session: view });
+        if (!view) return send(req, res, 404, { error: "session not found" });
+        return send(req, res, 200, { session: view });
       }
 
       const grantStatusMatch = path.match(/^\/v1\/sessions\/([^/]+)\/grant-status$/);
       if (req.method === "GET" && grantStatusMatch) {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
         const id = grantStatusMatch[1]!;
         const session = gateway.getSessionRecord(id);
-        if (!session) return send(res, 404, { error: "session not found" });
+        if (!session) return send(req, res, 404, { error: "session not found" });
         const mainnet = url.searchParams.get("mainnet") === "1";
         const status = await verifySessionGrantOnChain({
           session,
           network: mainnet ? "mainnet" : config.network,
         });
-        return send(res, 200, { sessionId: id, grantStatus: status });
+        return send(req, res, 200, { sessionId: id, grantStatus: status });
       }
 
       const revokeMatch = path.match(/^\/v1\/sessions\/([^/]+)\/revoke$/);
       if (req.method === "POST" && revokeMatch) {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
         const id = revokeMatch[1]!;
         const view = gateway.revoke(id);
         persist();
-        return send(res, 200, { session: view, revoked: true });
+        return send(req, res, 200, { session: view, revoked: true });
       }
 
       if (req.method === "POST" && path === "/v1/propose") {
         const token = bearer(req);
         if (!token?.startsWith("agt_")) {
-          return send(res, 401, { error: "agent Bearer agt_… required" });
+          return send(req, res, 401, { error: "agent Bearer agt_… required" });
         }
-        const body = (await readBody(req)) as { intent?: TradeIntent };
+        const body = (await readBody(req, config.maxBodyBytes)) as {
+          intent?: TradeIntent;
+        };
         if (!body.intent?.marketId) {
-          return send(res, 400, { error: "intent.marketId required" });
+          return send(req, res, 400, { error: "intent.marketId required" });
         }
         const result = gateway.propose(
           { role: "agent", apiToken: token },
           body.intent,
         );
         persist();
-        return send(res, 200, result);
+        return send(req, res, 200, result);
       }
 
       if (req.method === "POST" && path === "/v1/execute") {
         const token = bearer(req);
         if (!token?.startsWith("agt_")) {
-          return send(res, 401, { error: "agent Bearer agt_… required" });
+          return send(req, res, 401, { error: "agent Bearer agt_… required" });
         }
         if (!config.executeEnabled) {
-          return send(res, 503, {
+          return send(req, res, 503, {
             error:
               "execute disabled — set INTENTGUARD_EXECUTE=1 and owner key on sidecar",
           });
         }
         if (!config.ownerPrivateKeyHex) {
-          return send(res, 503, {
+          return send(req, res, 503, {
             error:
               "owner signing key missing — INTENTGUARD_OWNER_PRIVATE_KEY_HEX or .intentguard/owner-private-key.hex",
           });
         }
-        const body = (await readBody(req)) as { intent?: TradeIntent };
+        const body = (await readBody(req, config.maxBodyBytes)) as {
+          intent?: TradeIntent;
+        };
         if (!body.intent?.marketId) {
-          return send(res, 400, { error: "intent.marketId required" });
+          return send(req, res, 400, { error: "intent.marketId required" });
         }
         const result = await executeAgentIntent({
           gateway,
@@ -248,18 +325,18 @@ export function startGatewayServer() {
           network: config.network,
         });
         persist();
-        return send(res, 200, result);
+        return send(req, res, 200, result);
       }
 
       if (req.method === "POST" && path === "/v1/grants/plan") {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
-        const body = (await readBody(req)) as {
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        const body = (await readBody(req, config.maxBodyBytes)) as {
           policy?: IntentGuardPolicy;
           granteeAddress?: string;
           subaccountId?: string;
         };
         if (!body.policy || !body.granteeAddress || !body.subaccountId) {
-          return send(res, 400, {
+          return send(req, res, 400, {
             error: "policy, granteeAddress, subaccountId required",
           });
         }
@@ -268,13 +345,13 @@ export function startGatewayServer() {
           granteeAddress: body.granteeAddress,
           subaccountId: body.subaccountId,
         });
-        return send(res, 200, { plan });
+        return send(req, res, 200, { plan });
       }
 
       if (req.method === "GET" && path === "/v1/audit/grants") {
         const granter = url.searchParams.get("granter");
         if (!granter?.startsWith("inj1")) {
-          return send(res, 400, { error: "granter=inj1… query required" });
+          return send(req, res, 400, { error: "granter=inj1… query required" });
         }
         const mainnet = url.searchParams.get("mainnet") === "1";
         const fetched = await fetchGranterGrants({
@@ -282,7 +359,7 @@ export function startGatewayServer() {
           network: mainnet ? "mainnet" : "testnet",
         });
         const report = scoreGrants(granter, fetched.grants);
-        return send(res, 200, {
+        return send(req, res, 200, {
           pretty: formatGrantAuditReport(report),
           report,
           endpoint: fetched.endpoint,
@@ -290,7 +367,7 @@ export function startGatewayServer() {
       }
 
       if (req.method === "GET" && path === "/v1/audit/events") {
-        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
         const sessionId = url.searchParams.get("sessionId");
         let events = gateway.audit.list();
         if (sessionId) {
@@ -298,12 +375,15 @@ export function startGatewayServer() {
             (e) => (e.detail as { sessionId?: string })?.sessionId === sessionId,
           );
         }
-        return send(res, 200, { events });
+        return send(req, res, 200, { events });
       }
 
-      return send(res, 404, { error: "not found" });
+      return send(req, res, 404, { error: "not found" });
     } catch (err) {
-      return send(res, 500, {
+      if (err instanceof HttpError) {
+        return send(req, res, err.status, { error: err.message });
+      }
+      return send(req, res, 500, {
         error: err instanceof Error ? err.message : String(err),
       });
     }

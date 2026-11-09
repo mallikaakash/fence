@@ -1,5 +1,12 @@
 # IntentGuard v0.1.x
 
+## v0.1.3 (AppSec)
+
+- AES-256-GCM grantee key encryption at rest (`INTENTGUARD_DATA_KEY`)
+- HMAC audit seal; CORS allowlist; rate limits; body size cap
+- Timing-safe owner bearer; agent token TTL; owner API key rotation endpoint
+- `npm run security:verify` + gateway security tests
+
 ## v0.1.2 (E2E)
 
 - `GET /v1/sessions/:id/grant-status` — LCD typed grant check

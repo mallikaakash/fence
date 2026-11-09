@@ -1,6 +1,7 @@
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
+import { parseDataKey } from "./crypto.ts";
 
 export type GatewayConfig = {
   port: number;
@@ -15,6 +16,12 @@ export type GatewayConfig = {
   network: "testnet" | "mainnet";
   /** When true, execute denies if typed AuthZ grant missing on-chain. */
   requireOnChainGrant: boolean;
+  dataKey: Buffer | null;
+  requireDataKey: boolean;
+  corsOrigins: string[];
+  maxBodyBytes: number;
+  rateLimitPerMinute: number;
+  configPath: string;
 };
 
 function defaultDataDir(): string {
@@ -73,6 +80,32 @@ export function loadConfig(): GatewayConfig {
 
   const requireOnChainGrant = process.env.INTENTGUARD_REQUIRE_ONCHAIN_GRANT !== "0";
 
+  const dataKey = parseDataKey(process.env.INTENTGUARD_DATA_KEY);
+  const requireDataKey =
+    process.env.INTENTGUARD_REQUIRE_DATA_KEY === "1" ||
+    process.env.INTENTGUARD_REQUIRE_DATA_KEY === "true";
+  if (requireDataKey && !dataKey) {
+    throw new Error(
+      "INTENTGUARD_REQUIRE_DATA_KEY=1 but INTENTGUARD_DATA_KEY is missing",
+    );
+  }
+  if (!dataKey && process.env.NODE_ENV === "production") {
+    console.error(
+      "[intentguard] WARNING: INTENTGUARD_DATA_KEY unset — grantee keys stored plaintext",
+    );
+  }
+
+  const corsDefault = "http://127.0.0.1:3001,http://localhost:3001";
+  const corsOrigins = (process.env.INTENTGUARD_CORS_ORIGINS ?? corsDefault)
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  const maxBodyBytes = Number(process.env.INTENTGUARD_MAX_BODY_BYTES ?? 65_536);
+  const rateLimitPerMinute = Number(
+    process.env.INTENTGUARD_RATE_LIMIT_PER_MIN ?? 120,
+  );
+
   return {
     port,
     bindHost,
@@ -82,5 +115,25 @@ export function loadConfig(): GatewayConfig {
     ownerPrivateKeyHex,
     network,
     requireOnChainGrant,
+    dataKey,
+    requireDataKey,
+    corsOrigins,
+    maxBodyBytes,
+    rateLimitPerMinute,
+    configPath,
   };
+}
+
+export function rotateOwnerApiKey(configPath: string): string {
+  const ownerApiKey = `own_${randomBytes(24).toString("hex")}`;
+  writeFileSync(
+    configPath,
+    JSON.stringify(
+      { ownerApiKey, rotatedAt: new Date().toISOString() },
+      null,
+      2,
+    ) + "\n",
+    { mode: 0o600 },
+  );
+  return ownerApiKey;
 }

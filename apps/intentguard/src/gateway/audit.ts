@@ -9,7 +9,8 @@ export type AuditEvent = {
     | "key_isolation_ok"
     | "key_isolation_fail"
     | "execute_allowed"
-    | "execute_denied";
+    | "execute_denied"
+    | "owner_key_rotated";
   message: string;
   detail?: Record<string, unknown>;
 };

@@ -1,40 +1,51 @@
-# IntentGuard — threat model (v0.1)
+# IntentGuard — threat model
 
 ## Assets
 
-| Asset | Where it lives |
-|-------|----------------|
-| Grantee MsgExec key | Sidecar `state.json` (plaintext, mode 600) |
-| Owner granter key (execute mode) | Env or `owner-private-key.hex` on sidecar |
-| Owner HTTP API key | `config.json` |
-| Agent API token | Agent runtime + optional browser localStorage |
+| Asset | Where it lives | Protection (v0.1.3) |
+|-------|----------------|---------------------|
+| Grantee MsgExec key | Sidecar `state.json` | AES-256-GCM when `INTENTGUARD_DATA_KEY` set; file mode 0600 |
+| Owner granter key (execute) | Env or `owner-private-key.hex` | Operator custody; never in agent APIs |
+| Owner HTTP API key | `config.json` | mode 0600; timing-safe compare; `POST /v1/owner/rotate-api-key` |
+| Agent API token | Agent runtime | TTL default 7d; revocable session |
 
 ## Trust boundaries
 
-- **Agent** is untrusted: may send malicious intents, must not sign chain txs.
-- **Owner** is trusted to sign MsgGrant once and hold API key.
-- **Sidecar operator** must protect the host: disk, backups, and network exposure.
+- **Agent** — untrusted; Bearer `agt_` only.
+- **Owner** — trusted for MsgGrant + owner API key.
+- **Sidecar host** — must be hardened (loopback bind default, no public ingress).
 
-## What IntentGuard mitigates
+## Controls implemented
 
-- Agent exfiltration of grantee private key (token-only API).
-- Oversize notional / leverage / daily margin before MsgExec (when execute enabled).
-- Typed AuthZ scoping (markets, subaccount) enforced on-chain **after** owner signs grant plan.
+| Risk | Mitigation |
+|------|------------|
+| Network exposure | `INTENTGUARD_BIND=127.0.0.1` default |
+| CORS abuse | Allowlist via `INTENTGUARD_CORS_ORIGINS` (no `*`) |
+| Brute force / flood | Per-IP+route rate limit (`INTENTGUARD_RATE_LIMIT_PER_MIN`) |
+| Large bodies | `INTENTGUARD_MAX_BODY_BYTES` (default 64KiB) |
+| Owner key guessing | `timingSafeEqual` on bearer |
+| Grant plan scraping | Owner auth on `POST /v1/grants/plan` |
+| Disk theft | Encrypt grantee material + HMAC audit seal with `INTENTGUARD_DATA_KEY` |
+| Audit tampering | `auditSeal` HMAC on `state.json` v2 |
+| Stale agent tokens | `agentTokenExpiresAt` on sessions |
+| Plaintext ops mistake | `INTENTGUARD_REQUIRE_DATA_KEY=1` for strict deploys |
 
-## What it does not mitigate (v0.1)
+## Residual risk (document to customers)
 
-- Compromised sidecar host → full loss until on-chain revoke.
-- Owner’s separate generic AuthZ grants on the same wallet.
-- Gateway integrity: a patched sidecar could sign outside policy.
-- Plaintext `state.json` on shared backups or multi-tenant disks.
+- **Host compromise** — attacker with root can read `INTENTGUARD_DATA_KEY` from env and decrypt state.
+- **Owner key on sidecar** for execute mode — high value; prefer HSM/KMS in enterprise tier.
+- **No TLS in-process** — terminate TLS at reverse proxy for remote access.
+- **Grant LCD check** — grantee + auth type, not full market/subaccount decode yet.
+- **Gateway integrity** — supply-chain / binary trust is operator responsibility.
 
-## Operational defaults (v0.1.1+)
+## Production checklist
 
-- Gateway binds **127.0.0.1** by default (`INTENTGUARD_BIND`).
-- Sensitive JSON files written **mode 0600**; data dir **0700**.
-- `POST /v1/grants/plan` requires owner API key.
-- Daily margin budget applies on **successful execute**, not dry-run propose.
+```bash
+export INTENTGUARD_BIND=127.0.0.1
+export INTENTGUARD_DATA_KEY=$(openssl rand -hex 32)
+export INTENTGUARD_REQUIRE_DATA_KEY=1
+export INTENTGUARD_CORS_ORIGINS=http://127.0.0.1:3001
+export INTENTGUARD_EXECUTE=0   # until grants + funding ready
+```
 
-## Customer guidance
-
-Run sidecar on a dedicated VM, no public ingress, TLS via reverse proxy if remote, rotate `agt_` tokens per session, revoke on-chain when offboarding.
+See [E2E.md](./E2E.md) for functional setup.

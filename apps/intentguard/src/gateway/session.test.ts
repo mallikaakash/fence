@@ -55,5 +55,22 @@ describe("IntentGuardGateway", () => {
     assert.equal(after.status, "denied");
     assert.equal(gw.debugHasGranteeKey(view.sessionId), false);
   });
+
+  it("denies propose when agent token expired", () => {
+    const gw = new IntentGuardGateway();
+    const { agent } = gw.createSession({
+      policy,
+      granteePrivateKeyHex: "c".repeat(64),
+      granteeAddress: "inj1gateway",
+      agentTokenTtlMs: -1,
+    });
+    const denied = gw.propose(agent, {
+      marketId: "0xETH",
+      margin: "1",
+      leverage: 1,
+    });
+    assert.equal(denied.status, "denied");
+    assert.match(denied.decisionReasons.join(" "), /expired/i);
+  });
 });
 

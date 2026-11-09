@@ -24,6 +24,8 @@ export type GatewaySession = {
   ownerInjectiveAddress?: string;
   subaccountId?: string;
   subaccountIndex?: number;
+  /** ISO time after which agent token is rejected. */
+  agentTokenExpiresAt?: string;
 };
 
 export type PublicSessionView = {
@@ -63,6 +65,7 @@ export class IntentGuardGateway {
     ownerInjectiveAddress?: string;
     subaccountId?: string;
     subaccountIndex?: number;
+    agentTokenTtlMs?: number;
   }): { view: PublicSessionView; agent: AgentCredential } {
     const granteePrivateKeyHex =
       params.granteePrivateKeyHex ?? randomBytes(32).toString("hex");
@@ -72,6 +75,9 @@ export class IntentGuardGateway {
       params.granteeAddress ??
       `inj1pending_${fingerprintKey(granteePrivateKeyHex)}`;
 
+    const ttl =
+      params.agentTokenTtlMs ??
+      Number(process.env.INTENTGUARD_AGENT_TOKEN_TTL_MS ?? 7 * 24 * 60 * 60 * 1000);
     const session: GatewaySession = {
       sessionId,
       agentApiToken,
@@ -84,6 +90,7 @@ export class IntentGuardGateway {
       ownerInjectiveAddress: params.ownerInjectiveAddress,
       subaccountId: params.subaccountId,
       subaccountIndex: params.subaccountIndex,
+      agentTokenExpiresAt: new Date(Date.now() + ttl).toISOString(),
     };
 
     this.sessions.set(sessionId, session);
@@ -155,6 +162,18 @@ export class IntentGuardGateway {
     }
 
     const session = this.sessions.get(sessionId);
+    if (
+      session?.agentTokenExpiresAt &&
+      Date.now() >= Date.parse(session.agentTokenExpiresAt)
+    ) {
+      return {
+        status: "denied" as const,
+        decisionReasons: ["agent token expired — create a new session"],
+        signed: false as const,
+        wouldSign: false as const,
+      };
+    }
+
     if (!session) {
       return {
         status: "denied" as const,
