@@ -54,7 +54,7 @@ Trading MCP can sign transactions. Keep wallets off the machine until you delibe
 | Demo Day runbook | [docs/DEMO.md](./docs/DEMO.md) |
 | IntentGuard web UI | `npm run intentguard:web` → [apps/intentguard/web](./apps/intentguard/web) — hosted paths: `/start`, `/portfolio`, `/console` |
 | IntentGuard product | [docs/PRODUCT.md](./docs/PRODUCT.md), [GETTING-STARTED.md](./docs/GETTING-STARTED.md), [PRICING.md](./docs/PRICING.md) |
-| Release verify | `intentguard:smoke` · `security` · `e2e` · `gtm` · `platform` · `ux` — [SRE](./docs/SRE.md) · [UX](./docs/UX.md) |
+| Release verify | `smoke` · `security` · `e2e` · `gtm` · `platform` · `ux` · `agent` — [AGENTS](./docs/AGENTS.md) |
 
 ## Implementing later
 

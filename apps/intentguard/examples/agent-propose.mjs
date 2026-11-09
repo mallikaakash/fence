@@ -32,4 +32,11 @@ const res = await fetch(`${base}/v1/propose`, {
 
 const body = await res.json();
 console.log(res.status, JSON.stringify(body, null, 2));
+if (body.phase === "policy_check") {
+  console.log(
+    body.status === "allowed"
+      ? "→ Policy OK. No chain broadcast. Call POST /v1/execute on sidecar if execute enabled."
+      : "→ Denied at policy gate.",
+  );
+}
 process.exit(body.status === "allowed" ? 0 : 2);

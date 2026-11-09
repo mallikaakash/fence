@@ -39,12 +39,12 @@ const intentSchema = z.object({
 
 const server = new McpServer({
   name: "intentguard-policy",
-  version: "0.1.2",
+  version: "0.1.8",
 });
 
 server.tool(
   "intentguard_propose",
-  "Evaluate a trade proposal against an IntentGuard policy (offline). Does not sign or broadcast.",
+  "Offline policy only (no sidecar). Does NOT broadcast — use intentguard_gateway_propose for live sessions.",
   {
     policy: policySchema,
     intent: intentSchema,
@@ -92,33 +92,66 @@ server.tool(
   },
 );
 
-async function gatewayPropose(intent: TradeIntent): Promise<unknown> {
+async function gatewayFetch(
+  path: string,
+  init: RequestInit & { idempotencyKey?: string } = {},
+): Promise<unknown> {
   const base = process.env.INTENTGUARD_GATEWAY_URL?.replace(/\/$/, "");
   const token = process.env.INTENTGUARD_AGENT_TOKEN;
   if (!base || !token?.startsWith("agt_")) {
     throw new Error(
-      "Set INTENTGUARD_GATEWAY_URL and INTENTGUARD_AGENT_TOKEN for gateway propose",
+      "Set INTENTGUARD_GATEWAY_URL and INTENTGUARD_AGENT_TOKEN for gateway tools",
     );
   }
-  const res = await fetch(`${base}/v1/propose`, {
+  const headers: Record<string, string> = {
+    authorization: `Bearer ${token}`,
+    "content-type": "application/json",
+  };
+  if (init.idempotencyKey) {
+    headers["idempotency-key"] = init.idempotencyKey;
+  }
+  const res = await fetch(`${base}${path}`, { ...init, headers });
+  return { httpStatus: res.status, ...(await res.json()) };
+}
+
+async function gatewayPropose(intent: TradeIntent): Promise<unknown> {
+  return gatewayFetch("/v1/propose", {
     method: "POST",
-    headers: {
-      authorization: `Bearer ${token}`,
-      "content-type": "application/json",
-    },
     body: JSON.stringify({ intent }),
+    idempotencyKey: process.env.INTENTGUARD_IDEMPOTENCY_KEY,
   });
-  return { status: res.status, ...(await res.json()) };
 }
 
 server.tool(
   "intentguard_gateway_propose",
-  "Propose a trade via the running IntentGuard sidecar (policy + session). Requires INTENTGUARD_GATEWAY_URL and INTENTGUARD_AGENT_TOKEN.",
+  "Live sidecar POST /v1/propose — phase=policy_check, broadcast=false. On allowed, owner must enable execute on sidecar for chain orders. Set INTENTGUARD_GATEWAY_URL + INTENTGUARD_AGENT_TOKEN.",
   { intent: intentSchema },
   async ({ intent }) => {
     const result = await gatewayPropose(intent as TradeIntent);
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+    };
+  },
+);
+
+server.tool(
+  "intentguard_gateway_health",
+  "Query running sidecar GET /health (network, executeEnabled). Requires INTENTGUARD_GATEWAY_URL (+ agent token in env for consistency).",
+  {},
+  async () => {
+    const base = process.env.INTENTGUARD_GATEWAY_URL?.replace(/\/$/, "");
+    if (!base) {
+      throw new Error("Set INTENTGUARD_GATEWAY_URL");
+    }
+    const res = await fetch(`${base}/health`);
+    const json = await res.json();
+    return {
+      content: [
+        {
+          type: "text",
+          text: JSON.stringify({ httpStatus: res.status, ...json }, null, 2),
+        },
+      ],
     };
   },
 );

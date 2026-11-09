@@ -10,6 +10,10 @@ export {
   assertAgentHasNoSigningKey,
   isGranteeMaterialExposedToAgent,
 } from "./gateway/keys.ts";
+export { createGatewayClient } from "./client/gateway.ts";
+export type { GatewayClientOptions } from "./client/gateway.ts";
+export { envelopePropose, envelopeExecute } from "./agent/api-envelope.ts";
+export type { ProposeApiResponse, ExecuteApiResponse } from "./agent/api-envelope.ts";
 export { proposeTrade } from "./gateway/propose.ts";
 export type { ProposeResult } from "./gateway/propose.ts";
 export { IntentGuardGateway } from "./gateway/session.ts";

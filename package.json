@@ -19,6 +19,7 @@
     "intentguard:gtm": "npm run gtm:verify --prefix apps/intentguard",
     "intentguard:platform": "npm run platform:verify --prefix apps/intentguard",
     "intentguard:ux": "npm run ux:verify --prefix apps/intentguard",
+    "intentguard:agent": "npm run agent:verify --prefix apps/intentguard",
     "vercel-build": "npm install --prefix apps/intentguard/web && npm run build --prefix apps/intentguard/web"
   },
   "engines": {

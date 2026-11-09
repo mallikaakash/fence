@@ -10,13 +10,16 @@ export type GatewayClientOptions = {
 async function request(
   opts: GatewayClientOptions,
   path: string,
-  init: RequestInit & { asAgent?: boolean } = {},
+  init: RequestInit & { asAgent?: boolean; idempotencyKey?: string } = {},
 ) {
   const base = opts.baseUrl.replace(/\/$/, "");
   const headers = new Headers(init.headers);
   headers.set("content-type", "application/json");
   const token = init.asAgent ? opts.agentApiToken : opts.ownerApiKey;
   if (token) headers.set("authorization", `Bearer ${token}`);
+  if (init.idempotencyKey) {
+    headers.set("idempotency-key", init.idempotencyKey);
+  }
   const res = await fetch(`${base}${path}`, { ...init, headers });
   const json = await res.json().catch(() => ({}));
   return { res, json };
@@ -25,11 +28,13 @@ async function request(
 export function createGatewayClient(opts: GatewayClientOptions) {
   return {
     health: () => request(opts, "/health", { method: "GET" }),
-    propose: (intent: unknown) =>
+    openApi: () => request(opts, "/v1/openapi.json", { method: "GET" }),
+    propose: (intent: unknown, extra?: { idempotencyKey?: string }) =>
       request(opts, "/v1/propose", {
         method: "POST",
         body: JSON.stringify({ intent }),
         asAgent: true,
+        idempotencyKey: extra?.idempotencyKey,
       }),
     execute: (intent: unknown) =>
       request(opts, "/v1/execute", {

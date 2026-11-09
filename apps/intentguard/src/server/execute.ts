@@ -6,6 +6,7 @@ import { IsolatedGranteeSigner } from "../gateway/signer.ts";
 import { proposeAndExecLimitOrder } from "../chain/liveExec.ts";
 import { TRADING_SUBACCOUNT_INDEX } from "../chain/keys.ts";
 import type { SpikeWallet } from "../chain/keys.ts";
+import { maybeDispatchWebhook } from "./webhooks.ts";
 
 function walletFromHex(
   role: "owner" | "grantee",
@@ -33,7 +34,10 @@ export async function executeAgentIntent(params: {
   requireOnChainGrant?: boolean;
   network?: "testnet" | "mainnet";
 }): Promise<
-  Awaited<ReturnType<typeof proposeAndExecLimitOrder>> & { sessionId?: string }
+  Awaited<ReturnType<typeof proposeAndExecLimitOrder>> & {
+    sessionId?: string;
+    phase?: "chain_broadcast";
+  }
 > {
   const session = params.gateway.getSessionForAgent(params.agentApiToken);
   if (!session) {
@@ -143,16 +147,22 @@ export async function executeAgentIntent(params: {
     params.gateway.recordMarginUse(session.sessionId, params.intent.margin);
   }
 
-  params.gateway.audit.append(
-    result.status === "allowed" ? "execute_allowed" : "execute_denied",
-    result.reasons.join("; ") || result.stage,
-    {
-      sessionId: session.sessionId,
-      intent: params.intent,
-      broadcast: "broadcast" in result ? result.broadcast : false,
-      txHash: "txHash" in result ? result.txHash : undefined,
-    },
+  maybeDispatchWebhook(
+    params.gateway.audit.append(
+      result.status === "allowed" ? "execute_allowed" : "execute_denied",
+      result.reasons.join("; ") || result.stage,
+      {
+        sessionId: session.sessionId,
+        intent: params.intent,
+        broadcast: "broadcast" in result ? result.broadcast : false,
+        txHash: "txHash" in result ? result.txHash : undefined,
+      },
+    ),
   );
 
-  return { ...result, sessionId: session.sessionId };
+  return {
+    ...result,
+    sessionId: session.sessionId,
+    phase: "chain_broadcast" as const,
+  };
 }

@@ -19,6 +19,9 @@ import { RateLimiter } from "./rateLimit.ts";
 import { INTENTGUARD_VERSION } from "./version.ts";
 import { logJson } from "./log.ts";
 import { lcdRestBaseUrl } from "../chain/network.ts";
+import { buildOpenApiDocument } from "./openapi.ts";
+import { envelopeExecute, envelopePropose } from "../agent/api-envelope.ts";
+import { idempotencyGet, idempotencySet } from "./idempotency.ts";
 
 type Json = Record<string, unknown>;
 
@@ -210,33 +213,7 @@ export function startGatewayServer() {
       }
 
       if (req.method === "GET" && path === "/v1/openapi.json") {
-        return send(req, res, 200, {
-          openapi: "3.0.0",
-          info: { title: "IntentGuard Gateway", version: "0.1.0" },
-          paths: {
-            "/health": { get: { summary: "Service health" } },
-            "/health/live": { get: { summary: "Liveness probe" } },
-            "/health/ready": { get: { summary: "Readiness probe" } },
-            "/v1/sessions": { post: { summary: "Create session (owner)" } },
-            "/v1/sessions/{id}": { get: { summary: "Get session (owner)" } },
-            "/v1/sessions/{id}/grant-status": {
-              get: { summary: "On-chain typed grant check (owner)" },
-            },
-            "/v1/sessions/{id}/revoke": { post: { summary: "Revoke (owner)" } },
-            "/v1/propose": { post: { summary: "Propose trade (agent)" } },
-            "/v1/execute": {
-              post: {
-                summary: "Propose + MsgExec when INTENTGUARD_EXECUTE=1 (agent)",
-              },
-            },
-            "/v1/grants/plan": { post: { summary: "Typed grant plan" } },
-            "/v1/audit/grants": { get: { summary: "Grant auditor (public)" } },
-            "/v1/audit/events": { get: { summary: "Audit log (owner)" } },
-            "/v1/owner/rotate-api-key": {
-              post: { summary: "Rotate owner HTTP API key" },
-            },
-          },
-        });
+        return send(req, res, 200, buildOpenApiDocument() as Json);
       }
 
       const owner = bearer(req);
@@ -390,12 +367,29 @@ export function startGatewayServer() {
         if (!body.intent?.marketId) {
           return send(req, res, 400, { error: "intent.marketId required" });
         }
+        const idemKey = req.headers["idempotency-key"] as string | undefined;
+        const boundSession = gateway.getSessionForAgent(token);
+        if (idemKey && boundSession?.sessionId) {
+          const cached = idempotencyGet(boundSession.sessionId, idemKey);
+          if (cached) {
+            return send(req, res, 200, {
+              ...(cached as Json),
+              idempotentReplay: true,
+            });
+          }
+        }
         const result = gateway.propose(
           { role: "agent", apiToken: token },
           body.intent,
         );
+        const enveloped = envelopePropose(
+          result as unknown as Record<string, unknown>,
+        );
+        if (idemKey && enveloped.sessionId) {
+          idempotencySet(enveloped.sessionId, idemKey, enveloped);
+        }
         persist();
-        return send(req, res, 200, result);
+        return send(req, res, 200, enveloped as unknown as Json);
       }
 
       if (req.method === "POST" && path === "/v1/execute") {
@@ -430,7 +424,12 @@ export function startGatewayServer() {
           network: config.network,
         });
         persist();
-        return send(req, res, 200, result);
+        return send(
+          req,
+          res,
+          200,
+          envelopeExecute(result as unknown as Record<string, unknown>) as unknown as Json,
+        );
       }
 
       if (req.method === "POST" && path === "/v1/grants/plan") {

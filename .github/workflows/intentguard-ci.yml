@@ -7,12 +7,14 @@ on:
       - "apps/intentguard/**"
       - "docs/SRE.md"
       - "docs/UX.md"
+      - "docs/AGENTS.md"
       - ".github/workflows/intentguard-ci.yml"
   pull_request:
     paths:
       - "apps/intentguard/**"
       - "docs/SRE.md"
       - "docs/UX.md"
+      - "docs/AGENTS.md"
       - ".github/workflows/intentguard-ci.yml"
 
 defaults:
@@ -59,6 +61,9 @@ jobs:
 
       - name: UX verify
         run: npm run ux:verify
+
+      - name: Agent verify
+        run: npm run agent:verify
 
       - name: Web production build
         run: npm run web:build

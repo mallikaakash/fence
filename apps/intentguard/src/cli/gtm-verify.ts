@@ -59,5 +59,7 @@ const pkgScripts = pkg.scripts;
 assert.ok(pkgScripts["platform:verify"], "package.json must define platform:verify");
 assert.ok(pkgScripts["ux:verify"], "package.json must define ux:verify");
 assert.ok(existsSync(join(repoRoot, "docs/UX.md")), "missing UX.md");
+assert.ok(existsSync(join(repoRoot, "docs/AGENTS.md")), "missing AGENTS.md");
+assert.ok(pkgScripts["agent:verify"], "package.json must define agent:verify");
 
 console.log("OK gtm-verify:", required.length, "artifacts + nav/simulator/onboarding strings");

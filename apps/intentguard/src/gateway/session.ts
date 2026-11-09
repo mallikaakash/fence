@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { evaluateTradeIntent } from "../policy/evaluate.ts";
+import { maybeDispatchWebhook } from "../server/webhooks.ts";
 import { explainPolicy } from "../policy/explain.ts";
 import type { IntentGuardPolicy, TradeIntent } from "../policy/types.ts";
 import { AuditLog } from "./audit.ts";
@@ -189,11 +190,15 @@ export class IntentGuardGateway {
         decisionReasons: ["session revoked"],
         signed: false as const,
         wouldSign: false as const,
-      };
-      this.audit.append("propose_denied", "Revoked session", {
+        broadcast: false as const,
         sessionId,
-        intent,
-      });
+      };
+      maybeDispatchWebhook(
+        this.audit.append("propose_denied", "Revoked session", {
+          sessionId,
+          intent,
+        }),
+      );
       return result;
     }
 
@@ -202,26 +207,32 @@ export class IntentGuardGateway {
     });
 
     if (!decision.allow) {
-      this.audit.append("propose_denied", decision.reasons.join("; "), {
-        sessionId,
-        intent,
-      });
+      maybeDispatchWebhook(
+        this.audit.append("propose_denied", decision.reasons.join("; "), {
+          sessionId,
+          intent,
+        }),
+      );
       return {
         status: "denied" as const,
         decisionReasons: decision.reasons,
         signed: false as const,
         wouldSign: false as const,
+        broadcast: false as const,
+        sessionId,
       };
     }
 
     // Propose is a dry-run policy check — daily budget increments on successful execute only.
-    this.audit.append("propose_allowed", decision.reasons.join("; "), {
-      sessionId,
-      intent,
-      wouldSign: true,
-      signed: false,
-      dryRun: true,
-    });
+    maybeDispatchWebhook(
+      this.audit.append("propose_allowed", decision.reasons.join("; "), {
+        sessionId,
+        intent,
+        wouldSign: true,
+        signed: false,
+        dryRun: true,
+      }),
+    );
 
     return {
       status: "allowed" as const,
@@ -229,6 +240,7 @@ export class IntentGuardGateway {
       signed: false as const,
       wouldSign: true as const,
       dryRun: true as const,
+      broadcast: false as const,
       note: "Policy OK — no margin reserved until POST /v1/execute succeeds",
       sessionId,
       granteeAddress: session.granteeAddress,
