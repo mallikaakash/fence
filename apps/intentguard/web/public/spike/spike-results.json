@@ -1,0 +1,12 @@
+{
+  "checklist": {
+    "typed_market_authorization": { "pass": true },
+    "subaccount_authorization": { "pass": true },
+    "isolated_grantee_signing": { "pass": true },
+    "notional_enforcement": { "pass": true },
+    "funding_containment": { "pass": true },
+    "revocation": { "pass": true },
+    "no_alternate_path": { "pass": true }
+  },
+  "summary": { "passed": 7, "failed": 0 }
+}

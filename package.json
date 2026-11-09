@@ -7,7 +7,11 @@
     "skills:install": "bash scripts/install-skills.sh",
     "skills:update": "npx --yes skills update",
     "mcp:build": "npm install && npm run build --prefix vendor/mcp-server",
-    "doctor": "bash scripts/doctor.sh"
+    "doctor": "bash scripts/doctor.sh",
+    "intentguard:test": "npm test --prefix apps/intentguard",
+    "intentguard:demo": "npm run demo --prefix apps/intentguard",
+    "intentguard:audit": "npm run audit --prefix apps/intentguard",
+    "intentguard:web": "npm run web:dev --prefix apps/intentguard"
   },
   "engines": {
     "node": ">=20"

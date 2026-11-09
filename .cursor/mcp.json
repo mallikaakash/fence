@@ -9,6 +9,16 @@
       "env": {
         "INJECTIVE_NETWORK": "testnet"
       }
+    },
+    "intentguard-policy": {
+      "command": "node",
+      "args": [
+        "--experimental-strip-types",
+        "apps/intentguard/src/mcp/server.ts"
+      ],
+      "env": {
+        "INJECTIVE_NETWORK": "testnet"
+      }
     }
   }
 }

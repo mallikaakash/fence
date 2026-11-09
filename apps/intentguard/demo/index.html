@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>IntentGuard — Demo</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; background: #0b0f14; color: #e8eef4; line-height: 1.5; }
+  body { max-width: 52rem; margin: 2rem auto; padding: 0 1.25rem; }
+    h1 { font-size: 1.75rem; margin-bottom: 0.25rem; }
+    .sub { color: #8fa3b8; margin-bottom: 1.5rem; }
+    section { background: #141b24; border-radius: 10px; padding: 1rem 1.25rem; margin: 1rem 0; }
+    h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
+    code, a { color: #7eb8ff; }
+    ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
+    .beats li { margin: 0.35rem 0; }
+    footer { color: #6a7f94; font-size: 0.85rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>IntentGuard</h1>
+  <p class="sub">Typed AuthZ + isolated signer + order economics for AI trading agents on Injective.</p>
+
+  <section>
+    <h2>Live proof (testnet)</h2>
+    <ul>
+      <li>Typed grant: <a href="https://testnet.explorer.injective.network/transaction/F0852EA9E48CEDA2B779AFBEAF8DFEBC3DFDAA6BEFB64AA34D70295D62B701AF">F0852EA9…</a></li>
+      <li>Allowed MsgExec: <a href="https://testnet.explorer.injective.network/transaction/411EC04566E138288ED8FDCEDE1BC1F4E958866E22FBC9FE73CBDE3D55FE4D18">411EC045…</a></li>
+      <li>Notional oversize: blocked in gateway (no tx)</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Demo beats</h2>
+    <ol class="beats">
+      <li>Stock AutoSign = GenericAuthorization (any market/size at msg type).</li>
+      <li>IntentGuard typed grant: market_ids + subaccount_id.</li>
+      <li>Agent proposes; grantee key stays in gateway; policy enforces notional.</li>
+      <li>Revoke on-chain → MsgExec dead.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>CLI</h2>
+    <pre><code>cd apps/intentguard
+npm run demo:pitch
+npm run demo</code></pre>
+    <p>Runbook: <code>docs/DEMO.md</code> in the repo.</p>
+  </section>
+
+  <footer>Route A baseline · Route B precompile vault (smoke) · Injective buildathon</footer>
+</body>
+</html>

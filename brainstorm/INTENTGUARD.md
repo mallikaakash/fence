@@ -1,117 +1,103 @@
-# IntentGuard — deep brainstorm (no implementation yet)
+# IntentGuard — product + architecture (diligence-aligned)
 
-**One-liner:** Parameter-level, human-readable policies for AI trading agents on Injective — "Zodiac Roles for Injective's native exchange."
+**One-liner:** Injective-native execution policy for AI trading agents — typed exchange AuthZ + isolated signing + order economics, so an agent can propose trades without receiving authority to execute outside its mandate.
+
+**Diligence:** [DILIGENCE.md](./DILIGENCE.md) · **Spike:** [INTENTGUARD-SPIKE.md](./INTENTGUARD-SPIKE.md)
 
 Maps to gap **#2** (policy UX) and **#6** (trust / over-broad grants) in [docs/LANDSCAPE.md](../docs/LANDSCAPE.md).
 
 ---
 
-## 1. The real problem (verified, not hypothetical)
+## 1. The real problem (verified)
 
-Today's official autosign path (`authz_grant` in `vendor/mcp-server/src/authz/index.ts`, `injective-trading-autosign` skill) issues a **`GenericAuthorization` per message type** with an expiry. That is the entire policy.
+Official autosign / MCP `authz_grant` issues **`GenericAuthorization` per message type** + expiry. That is **not** IntentGuard.
 
-What a session key holding `MsgCreateDerivativeMarketOrder` can do:
+What a session key holding `MsgCreateDerivativeMarketOrder` under GenericAuthorization can do:
 
 | Can do | Why it matters |
 |--------|----------------|
-| Trade **any** of ~354 mainnet perp markets | Agent confuses `SICI` with an illiquid market; nothing stops it |
-| Any **size** up to subaccount balance | Hallucinated "10x" or extra zero goes through |
+| Trade **any** market of that message type | No `market_ids` in GenericAuthorization |
+| Any **size** up to collateral / margin rules | AuthZ has no notional field |
 | Any **leverage** up to market max | Same |
-| Any **price** (market order slippage) on thin books | See attack below |
-| Unlimited **number** of trades | Fee churn, revenge-trading loops |
+| Thin-book / prompt-injection drains | "No withdrawals" ≠ "no loss" |
 
-The skill's security claim is "trading only, no withdrawals." **No withdrawals ≠ no loss.**
+**Injective already has better primitives** — typed `Create*OrderAuthz` with `subaccount_id` + `market_ids[]` (Hummingbot builds these). Stock AutoSign does **not** expose those fields. IntentGuard must construct typed grants **and** enforce order notional / leverage off those grants (or in a Policy Vault).
 
-**Concrete attack (pitch this):** attacker steals a session key (or prompt-injects the agent) → places resting orders on an illiquid market from their own account → uses the grantee to market-buy into those orders at absurd prices → value moves to the attacker without a single `MsgSend`.
-
-Prompt injection makes this realistic: agents read news, tweets, and docs. One poisoned input — "BREAKING: max long X now" — and a generic grant executes it.
+Do **not** sell "first way to restrict markets" — Hummingbot already does typed market scoping. Sell **financial semantics** (notional, leverage, exposure, isolated signer, audit).
 
 ---
 
 ## 2. Design principles
 
-1. **Hard limits on-chain, soft judgement off-chain.** Anything that protects funds must not depend on IntentGuard's server being honest.
-2. **Always allow de-risking.** Closing/reducing positions and cancels are never blocked by budget rules (a guard that traps you in a losing position is worse than none).
-3. **Policies are readable both ways.** English → policy JSON → English again; the user signs what they read.
-4. **Every decision has a reason.** `REJECTED: leverage 8.0x > policy max 3x` — logged, shown, and fed back to the agent so it can self-correct.
-5. **Revocation is one click and verified on-chain** (skill rule: broadcast revoke, confirm, *then* clear local state).
+1. **Agent never holds the grantee MsgExec key.** Proposal ≠ execution authority.
+2. **Typed AuthZ for markets + subaccount; gateway/vault for notional & leverage.** Do not pretend AuthZ alone caps order size.
+3. **Funding ceiling ≠ notional ceiling.** Dedicated subaccount contains collateral; gateway enforces `price × quantity`.
+4. **Always allow de-risking.** Cancels / reduce-only never blocked by budget rules.
+5. **Every decision has a reason.** Rejected proposals explain which invariant failed.
+6. **Revoke on-chain first**, then clear local signer material.
+7. **No dashboard until the 7-point spike checklist passes.**
 
 ---
 
-## 3. Architecture options
+## 3. Architecture (BUILD WITH CHANGES)
 
-### Option B — On-chain policy vault (recommended target)
+### Route A — AuthZ Gateway (**baseline delivery**)
 
-Uses the **EVM exchange precompile proxy mode** ([docs](https://docs.injective.network/developers-evm/exchange-precompile#calling-the-precompile-direct-vs-proxy-access)):
-
-```solidity
-// user, once, from their EVM wallet
-exchange.approve(policyVault, msgTypes, spendLimit, duration);
+```
+Owner wallet → typed MsgGrant / MsgRevoke + funded subaccount
+AI agent → propose_trade only (no grantee key)
+IntentGuard gateway → decode + notional/leverage/market/expiry checks
+Isolated signer → holds grantee key; re-validates; signs MsgExec only
+Injective AuthZ → on-chain type / market_ids / subaccount / expiry
 ```
 
-```mermaid
-flowchart LR
-  A[AI agent] -->|propose order| V[PolicyVault.sol]
-  V -->|check market allowlist, size, leverage, daily budget, oracle band| V
-  V -->|allowed: call on behalf of user| X[Exchange precompile]
-  V -->|rejected: revert with reason| A
-  O[Oracle precompile] --> V
-  U[User] -->|approve / revoke| X
-```
+**Defensible claim:** An agent without the grantee key and without an alternate signing route cannot independently submit MsgExec under the owner's grant. Market/subaccount are also enforced on-chain. Notional/leverage depend on gateway/signer integrity (say that honestly).
 
-On-chain checks (cheap, deterministic):
+v0 grant set (narrow):
 
-| Rule | Data source |
-|------|-------------|
-| Market allowlist | `mapping(bytes32 => bool)` |
-| Max margin per order | order params |
-| Max leverage | notional ÷ margin |
-| Daily budget (margin deployed) | rolling counter in vault state |
-| Price band vs oracle (e.g. ±1%) | oracle precompile |
-| Max orders per hour | counter |
-| Policy expiry | timestamp |
-| Reduce-only always allowed | position direction check |
+- `CreateDerivativeLimitOrderAuthz` (subaccount + markets)
+- `CancelDerivativeOrderAuthz` (same)
 
-Plus precompile-level `spendLimit` + `duration` as a second fence.
+Do **not** grant market orders, batch updates, margin adds, or bank sends until required.
 
-**Pros:** non-custodial, verifiable, works with *any* agent. **Cons:** Solidity + precompile semantics need a spike; testnet market set is limited.
+### Route B — Exchange Precompile Policy Vault (**challenger**)
 
-### Option A — Off-chain co-signer (fallback)
+Solidity vault owns the exchange account; agent EOA calls only guarded methods; vault validates then calls Exchange Precompile `0x…65` (direct access). Stronger if proven: policy and exchange call share one on-chain transaction; agent never needs MsgExec.
 
-IntentGuard service holds the session/grantee key; agents submit intents; service evaluates policy, simulates, then signs `MsgExec`. Supports rich rules (drawdown, volatility, correlation), but it is **custodial of the session key** — say that honestly in the pitch.
+Spike in parallel. Promote only if testnet non-bypass is stronger than Route A. See [INTENTGUARD-SPIKE.md](./INTENTGUARD-SPIKE.md).
 
-### Recommended: B for hard limits, A-style layer for soft rules + UX
+### What we are not building first
 
-Soft rules (warn/require human approval rather than block): "position > 20% of portfolio", "trading during funding spike", "market moved >5% in 10 min".
+Generic multichain wallet · AuthZ-only UI · AUM product · full portfolio drawdown engine · options execution · dashboard before kill-switch pass.
 
 ---
 
-## 4. Product surface
+## 4. Product surface (ordered)
 
-| Component | What it is | Demo value |
-|-----------|-----------|------------|
-| **Grant Auditor** | Scan any `inj1…` for existing AuthZ grants; score risk (generic `MsgSend`, no expiry, `MsgBatchUpdateOrders`, stale grantees); one-click revoke | High, cheap, standalone — "revoke.cash for Injective AuthZ" |
-| **Policy Composer** | English → policy JSON → rendered summary; diff before signing | High — the "wow" for non-devs |
-| **PolicyVault** | Solidity contract enforcing hard limits via precompile | Core technical credibility |
-| **IntentGuard MCP** | Tools: `get_policy`, `propose_order`, `remaining_budget`, `explain_rejection` — agents trade *through* the guard instead of raw trading MCP | Agent-native; plugs into Claude/Cursor today |
-| **Decision log + kill switch** | Timeline of allowed/rejected actions with reasons; revoke all | Trust UX |
+| Priority | Component | Role |
+|----------|-----------|------|
+| P0 | Typed grant planner + isolated MsgExec signer | Core security path |
+| P0 | Policy engine (markets, notional, leverage, expiry) | Gateway economics |
+| P0 | Bypass / revoke test suite | Kill-switch evidence |
+| P1 | Grant Auditor | Scores GenericAuthorization / over-broad grants |
+| P1 | IntentGuard MCP (`propose_trade`, explain rejection) | Agent integration |
+| P2 | Policy Vault (precompile) | If Route B wins |
+| Later | Policy Composer (NL), hosted monitoring dashboard | After enforcement proven |
 
-Example policy (what the user writes):
-
-> "Trade only BTC and ETH perps. Max $200 margin per trade, max 3x leverage, $500 total per day. Never trade more than 1% away from the oracle price. Always let me close positions. Expires Friday."
-
-Compiled (sketch):
+Example v0 policy schema (application-level; not an Injective proto):
 
 ```json
 {
   "version": 1,
-  "markets": ["BTC/USDT PERP", "ETH/USDT PERP"],
-  "maxMarginPerOrder": "200",
+  "owner": "0xOWNER",
+  "agent": "0xAGENT",
+  "allowedMarkets": ["0xAPPROVED_MARKET_ID"],
+  "allowedOrderTypes": ["DERIVATIVE_LIMIT"],
+  "maxOrderNotional": "100",
   "maxLeverage": "3",
-  "dailyMarginBudget": "500",
-  "oracleBandBps": 100,
-  "reduceOnlyAlwaysAllowed": true,
-  "expiresAt": "2026-11-13T23:59:59Z"
+  "maxCollateral": "250",
+  "maxOutstandingOrders": 1,
+  "expiryTimestamp": 1794700800
 }
 ```
 
@@ -119,70 +105,70 @@ Compiled (sketch):
 
 ## 5. Demo script (≈3 minutes)
 
-Testnet has **18 active perps** (BTC/ETH/GOLD etc.; **no SICI**) — demo on those.
+Must use a **real** Injective order path after checklist pass.
 
-1. **Audit:** paste a wallet → IntentGuard flags a never-expiring generic grant to an old bot → revoke on-chain, confirmed.
-2. **Compose:** type the policy above → see compiled JSON + plain-English echo → approve PolicyVault.
-3. **Happy path:** Claude (via IntentGuard MCP) — "long ETH $100 at 2x" → allowed → fills on testnet.
-4. **Prompt injection:** feed the agent a poisoned "news" snippet → it tries "long ETH $2,000 at 10x" → **rejected on-chain** with reason → agent reads `explain_rejection`, downsizes or stops.
-5. **Thin-book attack:** grantee tries a market not on the allowlist → revert.
-6. **Kill switch:** revoke → next agent call fails cleanly.
+1. **Authority:** typed grant + policy (markets, notional cap) shown.
+2. **Fund:** limited collateral into dedicated subaccount (or vault).
+3. **Allow:** agent proposes valid limit order → gateway signs → order on exchange.
+4. **Deny:** wrong market or oversized notional → rejected; no order.
+5. **Revoke:** owner MsgRevoke → further proposes fail; audit trail shown.
+6. **(Addon)** OptionLens proposes hedge → IntentGuard allows/blocks (no options execution in v0).
 
 ---
 
 ## 6. Competitive landscape
 
-| Product | Chain | Gap IntentGuard fills |
-|---------|-------|------------------------|
-| Injective autosign (official) | Injective | Message-type only; no params |
-| Zodiac Roles Modifier (Safe) | EVM | Not wired to Injective's native exchange module |
-| MetaMask Delegation Toolkit (ERC-7710/7715 caveats) | EVM | Same; generic EVM calls, not orderbook semantics |
-| Turnkey / Privy policy engines | Multi | Custodial key policies, not trading-aware (leverage, oracle band) |
-| Coinbase AgentKit spend permissions | Base | Spend caps, not derivatives risk |
+| Product | Threat | IntentGuard differentiation |
+|---------|--------|------------------------------|
+| Official AutoSign / MCP | High adjacent | Typed grants + notional + isolated signer (AutoSign is msg-type only) |
+| Hummingbot Injective connector | High adjacent | Higher-level financial guardrails on top of typed AuthZ they already use |
+| Sup / Praxis (Sui) | Pattern | Own Injective CLOB / order / position semantics |
+| Openfort / Privy | Very high category | Exchange-aware execution, not generic wallet policy |
+| Polygon Agent Controls | Payments | Trading markets / notional / margin, not payment budgets |
 
-Positioning: **trading-semantic policies** (market, leverage, oracle band) on a **native orderbook**, enforced **on-chain**.
-
----
-
-## 7. Technical spikes (day 1 — decide A vs B)
-
-| # | Spike | Pass criterion |
-|---|-------|----------------|
-| 1 | Precompile `approve` from a testnet EVM wallet to a deployed contract | Contract places a derivative limit order for the user |
-| 2 | `spendLimit` semantics | Know whether it caps per-message, total, or both |
-| 3 | Oracle precompile read for a testnet perp | Price available in Solidity within one call |
-| 4 | Query existing grants for an address (LCD `/cosmos/authz/v1beta1/grants/granter/{addr}`) | Auditor data path works |
-| 5 | Reduce-only detection | Can read position direction in-contract or pre-check off-chain |
-
-If spike 1 fails by end of day 1 → ship **Option A** (co-signer) + Auditor, and present B as the roadmap.
+Positioning: **Injective exchange-aware financial policy**, not "another agent wallet."
 
 ---
 
-## 8. Risks
+## 7. Technical spikes
 
-| Risk | Mitigation |
-|------|------------|
-| Precompile proxy flow buggy on testnet | Option A fallback; Auditor is useful regardless |
-| "Just a wrapper on AuthZ" objection | Lead with the thin-book / prompt-injection attack — the generic grant demonstrably fails |
-| EIP-712 / SDK version traps | Pin `@injectivelabs/sdk-ts` 1.17.8 per autosign skill |
-| Policy compiler mistranslation | Always render back to English; user signs the rendered text |
-| Scope creep (drawdown, ML risk) | Hard limits only for MVP; soft rules = warnings |
+See [INTENTGUARD-SPIKE.md](./INTENTGUARD-SPIKE.md) for the full 48h matrix and 7-point acceptance checklist.
+
+Summary: Day 1 = typed AuthZ + MsgExec isolation; Day 2 = notional + bypass + Precompile challenger.
+
+---
+
+## 8. Risks (ranked)
+
+| Rank | Risk | Mitigation |
+|------|------|------------|
+| 1 | Agent obtains grantee key / alternate MsgExec path | Isolated signer; no agent key env; bypass suite |
+| 2 | Positioned as AuthZ UI | Lead with notional + isolation; Hummingbot already has market scoping |
+| 3 | Funding ≠ notional confusion on perps | Three independent limits documented |
+| 4 | Precompile vault unproven | Route A baseline; B is challenger |
+| 5 | Openfort/Privy already enough | One-day competitive probe; own exchange semantics |
+| 6 | Tiny Injective beachhead | Accept niche ARR; expand chains later |
+| 7 | Aggregate exposure / partial fills wrong | v0: per-order + outstanding-order cap; no daily-loss claim |
 
 ---
 
 ## 9. Pitch (60 seconds)
 
-1. Injective lets AI agents trade natively — via autosign grants that only say *which message types*.
-2. That means a session key can trade any market, any size, at any price. "No withdrawals" isn't "no loss" — here's a thin-book drain and a prompt injection doing it.
-3. IntentGuard: write the policy in English, enforce it on-chain through the exchange precompile, give agents a guard-aware MCP.
-4. Live: the injected agent gets rejected with a reason, and the human kills the session in one click.
-5. Next: policy templates for funds, Injective Hub integration, AgentProof-style attestations of every decision.
+1. Injective agents can trade via AuthZ — but stock AutoSign only scopes **message types**.
+2. Typed exchange AuthZ can lock **markets + subaccount**; it still cannot cap **order notional**. And if the agent holds the grantee key, policy is theater.
+3. IntentGuard: typed grants + isolated signer + financial policy — agent proposes, never executes outside mandate.
+4. Live: allowed order lands; oversized/wrong-market dies; revoke kills the session.
+5. Next: design partners, optional Policy Vault if precompile wins, OptionLens as the vertical demo.
 
 ---
 
-## 10. Open decisions
+## 10. Open decisions (post-spike)
 
-1. Option B (on-chain vault) vs A (co-signer) — decided by spike 1.
-2. Ship Grant Auditor as a public tool regardless? (recommended: yes)
-3. Natural-language compiler: LLM-only vs template + LLM fill?
-4. Frontend: Next.js dashboard vs CLI + MCP only?
+1. Promote Route B Policy Vault if non-bypass is stronger — else keep A.
+2. Ship Grant Auditor publicly regardless? (yes)
+3. NL compiler only after enforcement proven.
+4. Hosted monitoring pricing ($99–299 / $500–1.5k hypotheses) after 2 design partners.
+5. Optional FeeGrant for grantee gas (docs FeeGrant examples) — backlog.
+6. Prefer Indexer (`api.injective.exchange`) for post-exec order/balance proof — see `chain/verify.ts`.
+
+Official docs/SDK inventory: [docs/RESOURCES.md](../docs/RESOURCES.md).

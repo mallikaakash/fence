@@ -1,0 +1,26 @@
+{
+  "deny": {
+    "status": "denied",
+    "stage": "policy",
+    "reasons": ["notional 100 (price×qty) > maxOrderNotional 50"],
+    "signed": false,
+    "broadcast": false
+  },
+  "ok": {
+    "status": "allowed",
+    "txHash": "411EC04566E138288ED8FDCEDE1BC1F4E958866E22FBC9FE73CBDE3D55FE4D18",
+    "reasons": [
+      "market allowlisted",
+      "notional 2.5 <= 50"
+    ]
+  },
+  "grant": {
+    "txHash": "F0852EA9E48CEDA2B779AFBEAF8DFEBC3DFDAA6BEFB64AA34D70295D62B701AF",
+    "granter": "inj1yrvztj7g3x3009uhm03hgsp3fru6e4mdv7jpkz",
+    "grantee": "inj1cu9mv984p30etesxfrgwp3ve37mf5p8uhwrh9y",
+    "authorizationTypeUrls": [
+      "/injective.exchange.v1beta1.CreateDerivativeLimitOrderAuthz",
+      "/injective.exchange.v1beta1.CancelDerivativeOrderAuthz"
+    ]
+  }
+}

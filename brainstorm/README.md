@@ -1,31 +1,31 @@
 # Brainstorm track
 
-Implementation stays **out** of this folder. These docs define *what* to build later under `apps/<name>/`.
+Specs live here; code under `apps/intentguard/`.
+
+**Locked:** [CHOSEN.md](./CHOSEN.md) → **IntentGuard** hero · **BUILD WITH CHANGES** ([DILIGENCE.md](./DILIGENCE.md))
 
 | Doc | Idea |
 |-----|------|
-| [../docs/LANDSCAPE.md](../docs/LANDSCAPE.md) | **Research** — RWAs, gaps, NEAR vs RFQ/AuthZ, build fit |
-| [INTENTGUARD.md](./INTENTGUARD.md) | Gap #2 — parameter-level, on-chain policies for trading agents |
-| [OPTIONLENS.md](./OPTIONLENS.md) | Gap #3 — options fair value, implied odds, Compute Hedge Desk, options MCP |
-| [AGENTPROOF.md](./AGENTPROOF.md) | Gap #1 — verifiable agent deliverables (parked) |
-| [NEAR_STYLE_INTENTS.md](./NEAR_STYLE_INTENTS.md) | How to build intent → solver → settle on Injective |
+| [CHOSEN.md](./CHOSEN.md) | Hero / addon / kill switch |
+| [DILIGENCE.md](./DILIGENCE.md) | ChatGPT diligence lock (9 Nov 2026) |
+| [INTENTGUARD.md](./INTENTGUARD.md) | Product + architecture (Route A baseline) |
+| [INTENTGUARD-SPIKE.md](./INTENTGUARD-SPIKE.md) | 48h non-bypass + 7-point checklist |
+| [CUSTOMER-DISCOVERY.md](./CUSTOMER-DISCOVERY.md) | Interview scripts + validation bar |
+| [OPTIONLENS.md](./OPTIONLENS.md) | Demo Day addon |
+| [AGENTPROOF.md](./AGENTPROOF.md) | Parked |
+| [NEAR_STYLE_INTENTS.md](./NEAR_STYLE_INTENTS.md) | Parked (protocol-scale) |
+| [../docs/LANDSCAPE.md](../docs/LANDSCAPE.md) | Research backdrop |
 
 ## IntentGuard vs OptionLens
 
 | | IntentGuard | OptionLens |
 |---|-------------|------------|
-| Primitive status | AuthZ + precompile **live on testnet** | Options **whitelisted testnet**, no public addresses |
-| Biggest risk | Precompile proxy flow on testnet | Data access |
-| Demo "wow" | Prompt-injected agent rejected on-chain | GPU bill → hedge plan |
-| Skill mix | Solidity + agent/MCP + light UI | Quant + charts UI + MCP |
-| Weakest objection | "Wrapper on AuthZ" → answer with attack demo | "App already has payoff chart" → lead with fair value + hedging |
-| Fallback | Off-chain co-signer + Grant Auditor | Simulated series + independent pricing |
+| Primitive status | Typed AuthZ live; Precompile vault is challenger | Options whitelisted testnet |
+| Biggest risk | Agent obtains MsgExec key / alternate path | Data access |
+| Demo "wow" | Allowed order + oversized/wrong-market blocked + revoke | GPU bill → hedge proposal |
+| Weakest objection | "Wrapper on AuthZ" → Hummingbot already scopes markets; we add notional + isolated signer | "App already has payoff chart" |
+| Fallback | Grant Auditor + narrower per-order MVP | Simulated series |
 
-## Decision gate (day 1)
+## Locked decision
 
-1. Ask Injective for **options whitelist + contract/ABI**.
-2. Run IntentGuard **spike 1** (precompile `approve` → contract places order on testnet).
-
-- Whitelist granted and you like quant/UI → **OptionLens**.
-- No whitelist, or the team is stronger on contracts/agents → **IntentGuard** (every dependency is live).
-- Both work → IntentGuard core + an OptionLens-style "hedge agent constrained by IntentGuard" as the stretch demo.
+**IntentGuard** is the hero. Follow [INTENTGUARD-SPIKE.md](./INTENTGUARD-SPIKE.md). No dashboard until the 7-point checklist passes. OptionLens only after kill-switch tests pass.

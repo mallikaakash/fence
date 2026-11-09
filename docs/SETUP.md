@@ -38,6 +38,17 @@ Set `INJECTIVE_NETWORK` to `testnet` for hackathon work.
 
 [`@bguiz/ainj`](https://www.npmjs.com/package/@bguiz/ainj) — community installer for CLI + MCP + skills. Official path is this repo + InjectiveLabs GitHub.
 
+## Official docs & SDKs (Discord resource list)
+
+Full mapping of which Injective Labs / Notion / SDK links IntentGuard uses vs skips: **[RESOURCES.md](./RESOURCES.md)**.
+
+Highlights already wired:
+
+- Docs MCP → `docs.injective.network`
+- `@injectivelabs/sdk-ts` → typed MsgGrant / MsgExec / Indexer
+- Indexer (`api.injective.exchange`) → `apps/intentguard/src/chain/verify.ts`
+- Trading-account semantics (index 0 = bank merge) → subaccount index `1`
+
 ## Validation
 
 ```bash

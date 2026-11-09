@@ -1,6 +1,6 @@
 # AI agents — Injective buildathon workspace
 
-Human + agent development on **Injective**. This repo is scaffolded for research and tooling; application code comes after you lock an idea in `brainstorm/`.
+Human + agent development on **Injective**. **Chosen track: IntentGuard** (`brainstorm/CHOSEN.md`). App code lives under `apps/intentguard/`.
 
 ## Installed by `npm run setup`
 
@@ -9,6 +9,7 @@ Human + agent development on **Injective**. This repo is scaffolded for research
 | **Injective agent skills** | `.agents/skills/*` + `skills-lock.json` | CLI, EVM, MCP setup, trading, wallet UX playbooks |
 | **Injective Docs MCP** | `.cursor/mcp.json` → `injective-docs` | Live doc search (`https://docs.injective.network/mcp`) |
 | **Trading MCP** | `.cursor/mcp.json` → `injective-trading` | Markets, balances, trades — **local keystore** |
+| **IntentGuard MCP** | `.cursor/mcp.json` → `intentguard-policy` | Policy propose + grant audit — **no keys** |
 | **Vendor server source** | `vendor/mcp-server/` | Built artifact at `dist/mcp/server.js` |
 | **Cursor rules** | `.cursor/rules/injective-scaffold.mdc` | Testnet-first, no premature implementation |
 
@@ -31,12 +32,15 @@ Full list: [InjectiveLabs/agent-skills](https://github.com/InjectiveLabs/agent-s
 ## Repo layout
 
 ```
-docs/           # Setup checklist + ecosystem map
-brainstorm/     # Hackathon ideas (start with AGENTPROOF.md)
+docs/           # Setup, ecosystem, RESOURCES.md (Discord official links audit)
+brainstorm/     # Specs — start with CHOSEN.md + INTENTGUARD.md
+apps/           # Product code (intentguard)
 prompts/        # Master setup prompt for fresh machines
 scripts/        # setup, doctor, skills install
 vendor/         # mcp-server clone (not hand-edited)
 ```
+
+Official Discord resource list → IntentGuard usage: [docs/RESOURCES.md](./docs/RESOURCES.md).
 
 ## Typical agent workflows (scaffold)
 
@@ -74,6 +78,8 @@ npm run mcp:build
 
 ## Hackathon direction
 
-Primary brainstorm doc: **`brainstorm/AGENTPROOF.md`** (trust + verification for financial agents). Alternatives: IntentGuard, OptionLens — noted at bottom of that file.
+**Hero:** IntentGuard — [brainstorm/INTENTGUARD.md](./brainstorm/INTENTGUARD.md)  
+**Spike / kill switch:** [brainstorm/INTENTGUARD-SPIKE.md](./brainstorm/INTENTGUARD-SPIKE.md)  
+**Addon:** OptionLens · **Next:** AgentPay · **Parked:** AgentProof
 
 Human overview: [README.md](./README.md)

@@ -1,0 +1,35 @@
+{
+  "name": "@injective-buildathon/intentguard",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-strip-types --test src/**/*.test.ts src/**/**/*.test.ts",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "demo": "node --experimental-strip-types src/cli/demo.ts",
+    "demo:pitch": "node --experimental-strip-types src/cli/demo-pitch.ts",
+    "route-b:smoke": "node --experimental-strip-types src/cli/route-b-smoke.ts",
+    "mcp": "node --experimental-strip-types src/mcp/server.ts",
+    "web:dev": "npm run dev --prefix web",
+    "web:build": "npm run build --prefix web",
+    "audit": "node --experimental-strip-types src/cli/audit.ts",
+    "spike": "node --experimental-strip-types src/cli/spike.ts",
+    "spike:prepare": "node --experimental-strip-types src/cli/spike.ts --prepare-only",
+    "spike:notional": "node --experimental-strip-types src/cli/spike-notional.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2",
+    "zod": "^3.24.2"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@injectivelabs/core-proto-ts-v2": "^1.20.5",
+    "@injectivelabs/networks": "^1.20.66",
+    "@injectivelabs/sdk-ts": "^1.20.66",
+    "@injectivelabs/ts-types": "^1.20.66"
+  }
+}

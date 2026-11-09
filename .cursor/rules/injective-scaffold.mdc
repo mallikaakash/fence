@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Intent
 
-This repo is **tooling + research**, not a finished product. Do not add application code (contracts, services, full UIs) until the human picks a hackathon track in `brainstorm/`.
+**Chosen track: IntentGuard** (`brainstorm/CHOSEN.md`). Implement under `apps/intentguard/`. Keep testnet-first; do not expand into AgentPay/OptionLens apps until IntentGuard kill-switch tests pass.
 
 ## Defaults
 
@@ -27,9 +27,10 @@ This repo is **tooling + research**, not a finished product. Do not add applicat
 
 ## Before implementing
 
-1. Read `brainstorm/README.md` and the chosen idea doc (`INTENTGUARD.md` or `OPTIONLENS.md`).
-2. Confirm MVP scope with the user in one paragraph.
-3. Then create a dedicated package dir (e.g. `apps/agentproof/`) — not at repo root.
+1. Read `brainstorm/CHOSEN.md`, `DILIGENCE.md`, `INTENTGUARD.md`, and `INTENTGUARD-SPIKE.md`.
+2. **Route A baseline:** typed AuthZ + isolated grantee signer + gateway notional. **Route B** (Exchange Precompile Policy Vault) is a parallel challenger — promote only if proven stronger.
+3. Agent process must never receive the signing / grantee private key. Do not use stock AutoSign GenericAuthorization as the security foundation.
+4. No dashboard until the 7-point spike checklist in `INTENTGUARD-SPIKE.md` passes.
 
 ## Official references
 
