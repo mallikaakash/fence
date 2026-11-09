@@ -11,7 +11,8 @@
     "intentguard:test": "npm test --prefix apps/intentguard",
     "intentguard:demo": "npm run demo --prefix apps/intentguard",
     "intentguard:audit": "npm run audit --prefix apps/intentguard",
-    "intentguard:web": "npm run web:dev --prefix apps/intentguard"
+    "intentguard:web": "npm run web:dev --prefix apps/intentguard",
+    "vercel-build": "npm install --prefix apps/intentguard/web && npm run build --prefix apps/intentguard/web"
   },
   "engines": {
     "node": ">=20"

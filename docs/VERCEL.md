@@ -24,9 +24,19 @@ Production URL is printed at the end.
 ## Import from GitHub (Vercel dashboard)
 
 1. **Add New Project** → import `injective-buildathon` (or your fork).
-2. **Root Directory:** `apps/intentguard/web`
-3. Framework: Next.js (auto-detected)
-4. Deploy
+2. **Root Directory** → **Edit** → set to `apps/intentguard/web` → **Continue**
+3. Framework: **Next.js** (auto-detected; `package.json` in that folder)
+4. **Deploy** (build should take ~1–2 minutes, not a few seconds)
+
+### Fix: deploy “succeeds” but site shows Vercel 404
+
+That means Vercel built the **repo root**, not the Next app.
+
+1. [Vercel Dashboard](https://vercel.com) → your project → **Settings** → **General**
+2. **Root Directory** → `apps/intentguard/web` → **Save**
+3. **Deployments** → latest → **⋯** → **Redeploy** (use existing commit)
+
+Confirm build logs show `next build` and routes like `/`, `/trade`, `/history`.
 
 Proofs page uses committed `public/spike/*.json` on Vercel (no local `.spike/`).
 

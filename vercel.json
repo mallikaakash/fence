@@ -1,0 +1,6 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd apps/intentguard/web && npm install",
+  "buildCommand": "cd apps/intentguard/web && npm run build",
+  "framework": "nextjs"
+}
