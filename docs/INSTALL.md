@@ -93,6 +93,8 @@ Open `http://localhost:3001/console` — gateway URL `http://127.0.0.1:8787` + o
 
 Threat model: [THREAT-MODEL.md](./THREAT-MODEL.md)
 
+Full walkthrough: [E2E.md](./E2E.md)
+
 Public routes without secrets:
 
 - **Simulate** — offline policy demo

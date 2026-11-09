@@ -1,5 +1,13 @@
 # IntentGuard v0.1.x
 
+## v0.1.2 (E2E)
+
+- `GET /v1/sessions/:id/grant-status` — LCD typed grant check
+- Execute blocked until on-chain grant ready (override: `INTENTGUARD_REQUIRE_ONCHAIN_GRANT=0`)
+- Atomic `state.json` writes; MCP `intentguard_gateway_propose`
+- `docs/E2E.md`, `npm run grant:instructions`, thin `src/client/gateway.ts`
+- Console **Check grant** + auto-check after session create
+
 ## v0.1.1 (hardening)
 
 - Gateway binds `127.0.0.1` by default; Docker sets `DOCKER=1` → `0.0.0.0`

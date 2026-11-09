@@ -39,7 +39,7 @@ const intentSchema = z.object({
 
 const server = new McpServer({
   name: "intentguard-policy",
-  version: "0.1.0",
+  version: "0.1.2",
 });
 
 server.tool(
@@ -88,6 +88,37 @@ server.tool(
     });
     return {
       content: [{ type: "text", text: JSON.stringify(plan, null, 2) }],
+    };
+  },
+);
+
+async function gatewayPropose(intent: TradeIntent): Promise<unknown> {
+  const base = process.env.INTENTGUARD_GATEWAY_URL?.replace(/\/$/, "");
+  const token = process.env.INTENTGUARD_AGENT_TOKEN;
+  if (!base || !token?.startsWith("agt_")) {
+    throw new Error(
+      "Set INTENTGUARD_GATEWAY_URL and INTENTGUARD_AGENT_TOKEN for gateway propose",
+    );
+  }
+  const res = await fetch(`${base}/v1/propose`, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ intent }),
+  });
+  return { status: res.status, ...(await res.json()) };
+}
+
+server.tool(
+  "intentguard_gateway_propose",
+  "Propose a trade via the running IntentGuard sidecar (policy + session). Requires INTENTGUARD_GATEWAY_URL and INTENTGUARD_AGENT_TOKEN.",
+  { intent: intentSchema },
+  async ({ intent }) => {
+    const result = await gatewayPropose(intent as TradeIntent);
+    return {
+      content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };
   },
 );

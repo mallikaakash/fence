@@ -29,6 +29,8 @@ export type GatewaySession = {
 export type PublicSessionView = {
   sessionId: string;
   granteeAddress: string;
+  ownerInjectiveAddress?: string;
+  subaccountId?: string;
   policy: IntentGuardPolicy;
   policyEnglish: string;
   dailyMarginUsed: string;
@@ -247,10 +249,16 @@ export class IntentGuardGateway {
     return Boolean(s && s.granteePrivateKeyHex.length === 64);
   }
 
+  getSessionRecord(sessionId: string): GatewaySession | undefined {
+    return this.sessions.get(sessionId);
+  }
+
   private toPublic(session: GatewaySession): PublicSessionView {
     return {
       sessionId: session.sessionId,
       granteeAddress: session.granteeAddress,
+      ownerInjectiveAddress: session.ownerInjectiveAddress,
+      subaccountId: session.subaccountId,
       policy: session.policy,
       policyEnglish: explainPolicy(session.policy),
       dailyMarginUsed: session.dailyMarginUsed,

@@ -1,5 +1,6 @@
 import { PrivateKey, getSubaccountId } from "@injectivelabs/sdk-ts";
 import type { IntentGuardGateway } from "../gateway/session.ts";
+import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
 import type { TradeIntent } from "../policy/types.ts";
 import { IsolatedGranteeSigner } from "../gateway/signer.ts";
 import { proposeAndExecLimitOrder } from "../chain/liveExec.ts";
@@ -29,6 +30,8 @@ export async function executeAgentIntent(params: {
   agentApiToken: string;
   intent: TradeIntent;
   ownerPrivateKeyHex: string;
+  requireOnChainGrant?: boolean;
+  network?: "testnet" | "mainnet";
 }): Promise<
   Awaited<ReturnType<typeof proposeAndExecLimitOrder>> & { sessionId?: string }
 > {
@@ -95,6 +98,30 @@ export async function executeAgentIntent(params: {
       signed: false,
       broadcast: false,
     };
+  }
+
+  if (params.requireOnChainGrant !== false) {
+    const grantStatus = await verifySessionGrantOnChain({
+      session,
+      network: params.network ?? "testnet",
+    });
+    if (!grantStatus.ready) {
+      return {
+        status: "denied",
+        stage: "policy",
+        reasons: [
+          "on-chain typed grant missing or invalid",
+          ...grantStatus.issues,
+        ],
+        signed: false,
+        broadcast: false,
+        sessionId: session.sessionId,
+        grantStatus,
+      } as Awaited<ReturnType<typeof proposeAndExecLimitOrder>> & {
+        sessionId: string;
+        grantStatus: typeof grantStatus;
+      };
+    }
   }
 
   const signer = new IsolatedGranteeSigner({

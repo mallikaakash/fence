@@ -5,6 +5,7 @@ import { SPIKE_MARKET_ID } from "@/lib/constants";
 import {
   gatewayAuditEvents,
   gatewayCreateSession,
+  gatewayGrantStatus,
   gatewayHealth,
   gatewayListSessions,
   gatewayPropose,
@@ -76,6 +77,9 @@ export function OwnerConsole() {
   const [lastAgentToken, setLastAgentToken] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<CreateSessionPayload | null>(null);
   const [proposeResult, setProposeResult] = useState<string | null>(null);
+  const [grantStatusById, setGrantStatusById] = useState<
+    Record<string, { ready: boolean; issues: string[] }>
+  >({});
   const [ownerInj, setOwnerInj] = useState("");
 
   useEffect(() => {
@@ -154,6 +158,24 @@ export function OwnerConsole() {
       setLastAgentToken(created.agentApiToken);
       persist({ agentApiToken: created.agentApiToken });
       await refreshSessions();
+      await checkGrant(created.session.sessionId);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function checkGrant(sessionId: string) {
+    setBusy(true);
+    try {
+      const { res, json } = await gatewayGrantStatus(settings, sessionId);
+      if (res.ok) {
+        const gs = (json as { grantStatus: { ready: boolean; issues: string[] } })
+          .grantStatus;
+        setGrantStatusById((prev) => ({
+          ...prev,
+          [sessionId]: { ready: gs.ready, issues: gs.issues },
+        }));
+      }
     } finally {
       setBusy(false);
     }
@@ -345,15 +367,38 @@ export function OwnerConsole() {
               <div className="text-white/50">{s.granteeAddress}</div>
               <div className="text-white/40 text-xs">{s.policyEnglish}</div>
             </div>
-            {!s.revoked && (
-              <button
-                type="button"
-                className="text-xs text-red-300 border border-red-400/40 px-3 py-1 rounded-full"
-                onClick={() => revoke(s.sessionId)}
-              >
-                Revoke
-              </button>
-            )}
+            <div className="flex flex-col gap-1 items-end">
+              {grantStatusById[s.sessionId] && (
+                <span
+                  className={
+                    grantStatusById[s.sessionId].ready
+                      ? "text-green-300 text-xs"
+                      : "text-amber-200 text-xs"
+                  }
+                >
+                  On-chain grant:{" "}
+                  {grantStatusById[s.sessionId].ready ? "ready" : "pending"}
+                </span>
+              )}
+              {!s.revoked && (
+                <>
+                  <button
+                    type="button"
+                    className="text-xs text-[#75bfcf] border border-[#75bfcf]/40 px-3 py-1 rounded-full"
+                    onClick={() => checkGrant(s.sessionId)}
+                  >
+                    Check grant
+                  </button>
+                  <button
+                    type="button"
+                    className="text-xs text-red-300 border border-red-400/40 px-3 py-1 rounded-full"
+                    onClick={() => revoke(s.sessionId)}
+                  >
+                    Revoke
+                  </button>
+                </>
+              )}
+            </div>
           </div>
         ))}
       </div>

@@ -12,6 +12,9 @@ export type GatewayConfig = {
   executeEnabled: boolean;
   /** Granter private key for MsgExec — sidecar only, never sent to agents. */
   ownerPrivateKeyHex: string | null;
+  network: "testnet" | "mainnet";
+  /** When true, execute denies if typed AuthZ grant missing on-chain. */
+  requireOnChainGrant: boolean;
 };
 
 function defaultDataDir(): string {
@@ -65,6 +68,11 @@ export function loadConfig(): GatewayConfig {
     }
   }
 
+  const network =
+    process.env.INJECTIVE_NETWORK === "mainnet" ? "mainnet" : "testnet";
+
+  const requireOnChainGrant = process.env.INTENTGUARD_REQUIRE_ONCHAIN_GRANT !== "0";
+
   return {
     port,
     bindHost,
@@ -72,5 +80,7 @@ export function loadConfig(): GatewayConfig {
     ownerApiKey,
     executeEnabled,
     ownerPrivateKeyHex,
+    network,
+    requireOnChainGrant,
   };
 }

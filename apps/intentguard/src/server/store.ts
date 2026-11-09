@@ -1,4 +1,5 @@
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
+import { writeJsonAtomic } from "./persist.ts";
 import { join } from "node:path";
 import type { GatewaySession } from "../gateway/session.ts";
 import type { AuditEvent } from "../gateway/audit.ts";
@@ -31,8 +32,6 @@ export class FileStore {
 
   save(state: PersistedState): void {
     state.updatedAt = new Date().toISOString();
-    writeFileSync(this.path, JSON.stringify(state, null, 2) + "\n", {
-      mode: 0o600,
-    });
+    writeJsonAtomic(this.path, state);
   }
 }

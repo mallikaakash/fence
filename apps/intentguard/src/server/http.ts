@@ -10,6 +10,7 @@ import { TRADING_SUBACCOUNT_INDEX } from "../chain/keys.ts";
 import { loadConfig } from "./config.ts";
 import { FileStore } from "./store.ts";
 import { executeAgentIntent } from "./execute.ts";
+import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
 
 type Json = Record<string, unknown>;
 
@@ -72,8 +73,10 @@ export function startGatewayServer() {
         return send(res, 200, {
           ok: true,
           service: "intentguard-gateway",
-          version: "0.1.1",
+          version: "0.1.2",
           executeEnabled: config.executeEnabled,
+          network: config.network,
+          requireOnChainGrant: config.requireOnChainGrant,
           sessions: gateway.exportSessions().length,
         });
       }
@@ -86,6 +89,9 @@ export function startGatewayServer() {
             "/health": { get: { summary: "Liveness" } },
             "/v1/sessions": { post: { summary: "Create session (owner)" } },
             "/v1/sessions/{id}": { get: { summary: "Get session (owner)" } },
+            "/v1/sessions/{id}/grant-status": {
+              get: { summary: "On-chain typed grant check (owner)" },
+            },
             "/v1/sessions/{id}/revoke": { post: { summary: "Revoke (owner)" } },
             "/v1/propose": { post: { summary: "Propose trade (agent)" } },
             "/v1/execute": {
@@ -172,6 +178,20 @@ export function startGatewayServer() {
         return send(res, 200, { session: view });
       }
 
+      const grantStatusMatch = path.match(/^\/v1\/sessions\/([^/]+)\/grant-status$/);
+      if (req.method === "GET" && grantStatusMatch) {
+        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
+        const id = grantStatusMatch[1]!;
+        const session = gateway.getSessionRecord(id);
+        if (!session) return send(res, 404, { error: "session not found" });
+        const mainnet = url.searchParams.get("mainnet") === "1";
+        const status = await verifySessionGrantOnChain({
+          session,
+          network: mainnet ? "mainnet" : config.network,
+        });
+        return send(res, 200, { sessionId: id, grantStatus: status });
+      }
+
       const revokeMatch = path.match(/^\/v1\/sessions\/([^/]+)\/revoke$/);
       if (req.method === "POST" && revokeMatch) {
         if (!isOwner) return send(res, 401, { error: "owner authorization required" });
@@ -224,6 +244,8 @@ export function startGatewayServer() {
           agentApiToken: token,
           intent: body.intent,
           ownerPrivateKeyHex: config.ownerPrivateKeyHex,
+          requireOnChainGrant: config.requireOnChainGrant,
+          network: config.network,
         });
         persist();
         return send(res, 200, result);

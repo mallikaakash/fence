@@ -22,7 +22,7 @@ npm run gateway      # Sidecar HTTP API (product path) — see docs/PRODUCT.md
 npm run product:smoke
 ```
 
-Shippable install guide: [docs/INSTALL.md](../../docs/INSTALL.md) · Docker: `docker compose up` in this package.
+Shippable install: [docs/INSTALL.md](../../docs/INSTALL.md) · E2E: [docs/E2E.md](../../docs/E2E.md) · Docker: `docker compose up`
 
 Demo runbook: [../../docs/DEMO.md](../../docs/DEMO.md)
 

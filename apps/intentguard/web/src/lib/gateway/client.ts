@@ -35,6 +35,15 @@ export async function gatewayCreateSession(
   });
 }
 
+export async function gatewayGrantStatus(
+  settings: GatewaySettings,
+  sessionId: string,
+) {
+  return gwFetch(settings, `/v1/sessions/${sessionId}/grant-status`, {
+    method: "GET",
+  });
+}
+
 export async function gatewayRevokeSession(
   settings: GatewaySettings,
   sessionId: string,

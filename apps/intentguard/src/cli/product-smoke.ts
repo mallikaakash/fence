@@ -95,7 +95,24 @@ assert.equal(list.status, 200);
 const listed = (await list.json()) as { sessions: unknown[] };
 assert.equal(listed.sessions.length, 1);
 
-console.log("OK product-smoke: gateway session + policy deny + execute gate");
+const sessionId = (
+  await (
+    await fetch(`${base}/v1/sessions`, {
+      headers: { authorization: `Bearer ${config.ownerApiKey}` },
+    })
+  ).json()
+) as { sessions: Array<{ sessionId: string }> };
+const sid = sessionId.sessions[0]!.sessionId;
+const grant = await fetch(`${base}/v1/sessions/${sid}/grant-status`, {
+  headers: { authorization: `Bearer ${config.ownerApiKey}` },
+});
+assert.equal(grant.status, 200);
+const gs = (await grant.json()) as { grantStatus: { ready: boolean } };
+assert.equal(gs.grantStatus.ready, false);
+
+console.log(
+  "OK product-smoke: session + propose deny + execute gate + grant-status",
+);
 
 server.close();
 rmSync(dataDir, { recursive: true, force: true });

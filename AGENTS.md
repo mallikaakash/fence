@@ -9,7 +9,7 @@ Human + agent development on **Injective**. **Chosen track: IntentGuard** (`brai
 | **Injective agent skills** | `.agents/skills/*` + `skills-lock.json` | CLI, EVM, MCP setup, trading, wallet UX playbooks |
 | **Injective Docs MCP** | `.cursor/mcp.json` → `injective-docs` | Live doc search (`https://docs.injective.network/mcp`) |
 | **Trading MCP** | `.cursor/mcp.json` → `injective-trading` | Markets, balances, trades — **local keystore** |
-| **IntentGuard MCP** | `.cursor/mcp.json` → `intentguard-policy` | Policy propose + grant audit — **no keys** |
+| **IntentGuard MCP** | `.cursor/mcp.json` → `intentguard-policy` | Policy + grant audit; optional `INTENTGUARD_GATEWAY_URL` + `INTENTGUARD_AGENT_TOKEN` for live sidecar propose |
 | **Vendor server source** | `vendor/mcp-server/` | Built artifact at `dist/mcp/server.js` |
 | **Cursor rules** | `.cursor/rules/injective-scaffold.mdc` | Testnet-first, no premature implementation |
 
