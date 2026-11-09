@@ -21,6 +21,7 @@
     "intentguard:ux": "npm run ux:verify --prefix apps/intentguard",
     "intentguard:agent": "npm run agent:verify --prefix apps/intentguard",
     "intentguard:legal": "npm run legal:verify --prefix apps/intentguard",
+    "intentguard:production": "npm run production:verify --prefix apps/intentguard",
     "vercel-build": "npm install --prefix apps/intentguard/web && npm run build --prefix apps/intentguard/web"
   },
   "engines": {

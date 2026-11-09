@@ -33,10 +33,14 @@ export async function POST(request: Request) {
     const decision = evaluateTradeIntent(policy, intent);
     return NextResponse.json({
       ok: true,
+      mode: "offline_policy_mirror",
       status: decision.allow ? "allowed" : "denied",
       reasons: decision.reasons,
-      wouldBroadcast: decision.allow,
+      wouldBroadcast: false,
       signed: false,
+      broadcast: false,
+      note:
+        "Browser policy mirror only — use POST /v1/propose on the sidecar (or /console + agent token) for live sessions.",
       policy,
       intent,
     });

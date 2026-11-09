@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { SPIKE_MARKET_ID } from "@/lib/constants";
-import { loadGatewaySettings } from "@/lib/gateway/storage";
 import { gatewayPropose } from "@/lib/gateway/client";
+import { loadGatewaySettings } from "@/lib/gateway/storage";
+import { fetchHostedStatus } from "@/lib/hosted";
 
 type ProposeResponse = {
   ok: boolean;
@@ -27,7 +28,12 @@ export function PolicySimulator() {
 
   useEffect(() => {
     const s = loadGatewaySettings();
-    setSidecarReady(Boolean(s.agentApiToken && s.baseUrl));
+    const ready = Boolean(s.agentApiToken && s.baseUrl);
+    setSidecarReady(ready);
+    if (ready) setUseSidecar(true);
+    void fetchHostedStatus().then((st) => {
+      if (st?.proxyConfigured && ready) setUseSidecar(true);
+    });
   }, []);
 
   const notionalPreview = useMemo(() => {
@@ -144,8 +150,8 @@ export function PolicySimulator() {
           </h1>
           <p className="text-white/70 text-sm mt-2">
             {useSidecar
-              ? "Live sidecar propose (gateway session policy)"
-              : "Offline demo — enable sidecar after /console setup"}
+              ? "Live sidecar POST /v1/propose (session policy on gateway)"
+              : "Offline policy mirror — connect agent token in /console or use sidecar"}
           </p>
           <label className="flex items-center gap-2 text-xs text-white/70 mt-2">
             <input
@@ -202,7 +208,7 @@ export function PolicySimulator() {
 
           <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-5 md:p-6 space-y-4">
             <h2 className="text-xl font-bold">
-              <span className="bg-[#75bfcf] px-2 text-black">Demo presets</span>
+              <span className="bg-[#75bfcf] px-2 text-black">Policy scenarios</span>
             </h2>
             <p className="text-sm text-white/70">
               Spike scenarios: oversize notional (deny) vs in-policy size

@@ -1,5 +1,7 @@
 # IntentGuard — production topology
 
+**Prefer all-in-GCP?** See [DEPLOY-GCP.md](./DEPLOY-GCP.md) (Cloud Run + GCS state) instead of Vercel + Railway.
+
 Real product = **two deployables**:
 
 | Piece | Where | Role |
@@ -15,7 +17,15 @@ Vercel does **not** run the gateway (state, keys, MsgExec). Do not treat the pub
 cd apps/intentguard
 ```
 
-**Railway:** connect repo, set root to `apps/intentguard`, use `Dockerfile`, add persistent volume at `/data`, set env from `.env.example` (production: `INTENTGUARD_REQUIRE_DATA_KEY=1`, `INTENTGUARD_DATA_KEY`, `INTENTGUARD_CORS_ORIGINS`).
+**Railway (recommended):**
+
+```bash
+railway login                    # finish OAuth in browser
+chmod +x scripts/deploy-intentguard-railway.sh
+./scripts/deploy-intentguard-railway.sh
+```
+
+Or manually: `cd apps/intentguard && railway up -y --name intentguard-gateway`, attach a **volume** at mount path `/data`, set env (`DOCKER=1`, `INTENTGUARD_REQUIRE_DATA_KEY=1`, `INTENTGUARD_DATA_KEY`, `INTENTGUARD_OWNER_API_KEY`, `INTENTGUARD_CORS_ORIGINS` = your Vercel URL), then **Generate domain** in the Railway service settings.
 
 **Render:** use [`render.yaml`](../apps/intentguard/render.yaml) → attach disk for `/data/.intentguard`.
 

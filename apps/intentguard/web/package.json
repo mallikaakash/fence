@@ -1,6 +1,6 @@
 {
   "name": "@injective-buildathon/intentguard-web",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "scripts": {
     "dev": "next dev --port 3001",
@@ -11,6 +11,9 @@
     "deploy": "vercel deploy --prod"
   },
   "dependencies": {
+    "@injectivelabs/networks": "^1.20.66",
+    "@injectivelabs/sdk-ts": "^1.20.66",
+    "@injectivelabs/utils": "^1.20.66",
     "next": "16.1.6",
     "react": "19.2.3",
     "react-dom": "19.2.3"

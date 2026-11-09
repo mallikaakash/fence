@@ -70,8 +70,8 @@ jobs:
       - name: Legal verify
         run: npm run legal:verify
 
-      - name: Web production build
-        run: npm run web:build
+      - name: Production verify (includes web build)
+        run: npm run production:verify
 
   docker:
     runs-on: ubuntu-latest

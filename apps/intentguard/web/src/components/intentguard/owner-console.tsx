@@ -26,6 +26,8 @@ import {
   GatewaySecretsPanel,
   GrantTxPlanPanel,
 } from "@/components/intentguard/gateway-ux";
+import { GrantBroadcastButton } from "@/components/intentguard/grant-broadcast-button";
+import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
 
 type SessionView = {
   sessionId: string;
@@ -427,6 +429,10 @@ export function OwnerConsole() {
 
       <div className="border border-white/10 rounded-xl p-6 bg-white/5 space-y-4">
         <h2 className="text-[#75bfcf] text-lg">New session</h2>
+        <OwnerWalletConnect
+          network={healthInfo?.network === "mainnet" ? "mainnet" : "testnet"}
+          onAddress={setOwnerInj}
+        />
         <input
           placeholder="Owner inj1… address"
           className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
@@ -513,12 +519,20 @@ export function OwnerConsole() {
                 </span>
               )}
               {grantTxPlanById[s.sessionId] && (
-                <GrantTxPlanPanel
-                  json={grantTxPlanById[s.sessionId]}
-                  onCopy={() =>
-                    void navigator.clipboard.writeText(grantTxPlanById[s.sessionId])
-                  }
-                />
+                <>
+                  <GrantTxPlanPanel
+                    json={grantTxPlanById[s.sessionId]}
+                    onCopy={() =>
+                      void navigator.clipboard.writeText(grantTxPlanById[s.sessionId])
+                    }
+                  />
+                  <GrantBroadcastButton
+                    ownerInjectiveAddress={ownerInj}
+                    grantTxPlanJson={grantTxPlanById[s.sessionId]}
+                    network={healthInfo?.network === "mainnet" ? "mainnet" : "testnet"}
+                    onSuccess={() => void checkGrant(s.sessionId)}
+                  />
+                </>
               )}
               {!s.revoked && (
                 <>

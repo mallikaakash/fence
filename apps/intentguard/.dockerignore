@@ -1,0 +1,7 @@
+node_modules
+.intentguard
+.spike
+.env*
+!.env.example
+coverage
+**/*.test.ts

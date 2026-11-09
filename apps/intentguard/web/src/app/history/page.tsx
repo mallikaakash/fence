@@ -13,9 +13,11 @@ export default function HistoryPage() {
               </span>
             </h1>
             <p className="text-white/70 text-sm max-w-xl">
-              Cached testnet spike evidence from{" "}
-              <code className="text-white/90">.spike/</code> — grant, MsgExec,
-              notional deny.
+              Archived testnet spike artifacts (committed{" "}
+              <code className="text-white/90">public/spike/</code> or local{" "}
+              <code className="text-white/90">.spike/</code>) — not live chain
+              state. Re-run <code className="text-white/90">npm run spike:notional</code>{" "}
+              for fresh proofs.
             </p>
             <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-5 md:p-6">
               <ProofList />

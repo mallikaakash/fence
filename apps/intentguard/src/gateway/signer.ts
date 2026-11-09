@@ -116,9 +116,9 @@ export class IsolatedGranteeSigner {
   }
 
   /**
-   * Re-validate approval + payload, then "sign".
-   * Spike: returns a deterministic HMAC-style signature placeholder (not chain-ready).
-   * Live MsgExec broadcast wires here next — still never exposes #privateKeyHex.
+   * Re-validate approval + payload, then bind approval (HMAC gate).
+   * Chain secp256k1 MsgExec is broadcast separately via grantee key in `chain/msgExec.ts`.
+   * Never exposes #privateKeyHex to agent APIs.
    */
   signApprovedPayload(params: {
     agent: AgentCredential;
