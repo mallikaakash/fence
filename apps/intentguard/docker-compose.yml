@@ -4,6 +4,7 @@ services:
     ports:
       - "8787:8787"
     environment:
+      DOCKER: "1"
       INTENTGUARD_PORT: "8787"
       INTENTGUARD_DATA_DIR: /data/.intentguard
       # INTENTGUARD_OWNER_API_KEY: set in .env

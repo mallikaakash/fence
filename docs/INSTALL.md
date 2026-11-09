@@ -38,7 +38,7 @@ curl -sS -X POST http://127.0.0.1:8787/v1/sessions \
   -d @examples/session-testnet.json
 ```
 
-Use `examples/session-testnet.json` in this repo (market + limits).
+Edit `examples/session-testnet.json` — set `ownerInjectiveAddress` to your `inj1…` wallet (replace placeholder).
 
 Give the response `agentApiToken` to the agent process only.
 
@@ -79,6 +79,8 @@ Mount persists at volume `intentguard-data`. Set `INTENTGUARD_OWNER_API_KEY` in 
 
 ## Option C — Web UI
 
+**Important:** The owner console talks to **your** gateway over HTTP. It works when you run **both** on the same machine (`npm run gateway` + `npm run web:dev`). The hosted Vercel site cannot reach `127.0.0.1` on your laptop — use local web for console ops.
+
 ```bash
 # Terminal 1
 npm run gateway
@@ -87,7 +89,9 @@ npm run gateway
 npm run web:dev
 ```
 
-Open `http://localhost:3001/console` — connect gateway URL + owner key (stored in browser localStorage).
+Open `http://localhost:3001/console` — gateway URL `http://127.0.0.1:8787` + owner key from `.intentguard/config.json` (stored in browser localStorage).
+
+Threat model: [THREAT-MODEL.md](./THREAT-MODEL.md)
 
 Public routes without secrets:
 

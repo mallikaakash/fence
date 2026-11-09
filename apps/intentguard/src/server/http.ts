@@ -72,7 +72,7 @@ export function startGatewayServer() {
         return send(res, 200, {
           ok: true,
           service: "intentguard-gateway",
-          version: "0.1.0",
+          version: "0.1.1",
           executeEnabled: config.executeEnabled,
           sessions: gateway.exportSessions().length,
         });
@@ -230,6 +230,7 @@ export function startGatewayServer() {
       }
 
       if (req.method === "POST" && path === "/v1/grants/plan") {
+        if (!isOwner) return send(res, 401, { error: "owner authorization required" });
         const body = (await readBody(req)) as {
           policy?: IntentGuardPolicy;
           granteeAddress?: string;
@@ -286,8 +287,10 @@ export function startGatewayServer() {
     }
   });
 
-  server.listen(config.port, () => {
-    console.log(`IntentGuard gateway listening on http://127.0.0.1:${config.port}`);
+  server.listen(config.port, config.bindHost, () => {
+    console.log(
+      `IntentGuard gateway listening on http://${config.bindHost}:${config.port}`,
+    );
     console.log(`Data: ${config.dataDir}`);
     console.log(`OpenAPI: http://127.0.0.1:${config.port}/v1/openapi.json`);
   });

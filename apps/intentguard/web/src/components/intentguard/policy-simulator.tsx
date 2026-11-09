@@ -12,6 +12,7 @@ type ProposeResponse = {
 };
 
 export function PolicySimulator() {
+  // Offline policy only — production agents should call the sidecar POST /v1/propose.
   const [margin, setMargin] = useState("10");
   const [leverage, setLeverage] = useState("2");
   const [price, setPrice] = useState("100");
@@ -111,9 +112,8 @@ export function PolicySimulator() {
             </span>
           </h1>
           <p className="text-white/70 text-sm mt-2">
-            Offline policy gate — same engine as{" "}
-            <code className="text-white/90">proposeAndExecLimitOrder</code> (no
-            keys in browser)
+            Offline policy demo — for production use sidecar{" "}
+            <code className="text-white/90">POST /v1/propose</code> (see Console)
           </p>
         </div>
 

@@ -22,6 +22,13 @@ export default function Home() {
               agents propose trades without holding keys or escaping their mandate. Route A is live
               on Injective testnet.
             </p>
+            <p className="text-sm text-left max-w-2xl text-amber-200/90 border border-amber-400/30 rounded-lg px-3 py-2 bg-amber-950/30">
+              Owner console requires a{" "}
+              <span className="font-medium">local sidecar</span> — run{" "}
+              <code className="text-amber-100/80">npm run gateway</code> and{" "}
+              <code className="text-amber-100/80">npm run web:dev</code> on your machine (not via
+              hosted localhost).
+            </p>
           </div>
 
           <div className="flex flex-col gap-3">

@@ -12,14 +12,19 @@ describe("gateway HTTP", () => {
   let ownerKey: string;
   let dataDir: string;
 
-  before(() => {
+  before(async () => {
     dataDir = mkdtempSync(join(tmpdir(), "igw-"));
     process.env.INTENTGUARD_DATA_DIR = dataDir;
     process.env.INTENTGUARD_OWNER_API_KEY = "own_test_key";
     process.env.INTENTGUARD_PORT = "0";
+    process.env.INTENTGUARD_BIND = "127.0.0.1";
     const started = startGatewayServer();
     server = started.server;
     ownerKey = started.config.ownerApiKey;
+    await new Promise<void>((resolve, reject) => {
+      server.once("listening", () => resolve());
+      server.once("error", reject);
+    });
     const addr = server.address();
     assert.ok(addr && typeof addr === "object");
     port = addr.port;

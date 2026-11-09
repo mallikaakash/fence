@@ -24,6 +24,45 @@ type SessionView = {
   dailyMarginUsed: string;
 };
 
+type CreateSessionPayload = {
+  agentApiToken: string;
+  granteeAddress: string;
+  subaccountId: string;
+  grantPlan: {
+    granteeAddress: string;
+    subaccountId: string;
+    msgTypes: string[];
+    warnings: string[];
+    gatewayEnforced: string[];
+  };
+  session: { sessionId: string; granteeAddress: string };
+};
+
+type SessionCreateResponse = {
+  agentApiToken: string;
+  subaccountId: string;
+  grantPlan: CreateSessionPayload["grantPlan"];
+  session: CreateSessionPayload["session"];
+};
+
+function CopyField({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="space-y-1">
+      <div className="text-white/50 text-xs">{label}</div>
+      <div className="flex gap-2 items-start">
+        <code className="text-xs text-white/80 break-all flex-1">{value}</code>
+        <button
+          type="button"
+          className="text-xs shrink-0 px-2 py-1 rounded border border-white/20 text-white/70"
+          onClick={() => navigator.clipboard.writeText(value)}
+        >
+          Copy
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function OwnerConsole() {
   const [settings, setSettings] = useState<GatewaySettings>({
     baseUrl: "http://127.0.0.1:8787",
@@ -35,6 +74,7 @@ export function OwnerConsole() {
   const [events, setEvents] = useState<unknown[]>([]);
   const [busy, setBusy] = useState(false);
   const [lastAgentToken, setLastAgentToken] = useState<string | null>(null);
+  const [onboarding, setOnboarding] = useState<CreateSessionPayload | null>(null);
   const [proposeResult, setProposeResult] = useState<string | null>(null);
   const [ownerInj, setOwnerInj] = useState("");
 
@@ -102,9 +142,17 @@ export function OwnerConsole() {
         alert(JSON.stringify(json));
         return;
       }
-      const token = (json as { agentApiToken: string }).agentApiToken;
-      setLastAgentToken(token);
-      persist({ agentApiToken: token });
+      const raw = json as SessionCreateResponse;
+      const created: CreateSessionPayload = {
+        agentApiToken: raw.agentApiToken,
+        granteeAddress: raw.session.granteeAddress,
+        subaccountId: raw.subaccountId,
+        grantPlan: raw.grantPlan,
+        session: raw.session,
+      };
+      setOnboarding(created);
+      setLastAgentToken(created.agentApiToken);
+      persist({ agentApiToken: created.agentApiToken });
       await refreshSessions();
     } finally {
       setBusy(false);
@@ -164,8 +212,10 @@ export function OwnerConsole() {
     <section className="space-y-8 max-w-3xl mx-auto px-6 pt-32 pb-20">
       <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
       <p className="text-white/70 text-sm">
-        Connects to your sidecar gateway. Keys stay in this browser localStorage — use
-        on a trusted machine or run the web app locally.
+        Connects to your sidecar at <code className="text-white/90">http://127.0.0.1:8787</code>{" "}
+        while <code className="text-white/90">npm run gateway</code> is running on this machine.
+        Owner/agent secrets use browser localStorage — prefer this page via{" "}
+        <code className="text-white/90">npm run web:dev</code>, not hosted Vercel.
       </p>
 
       <div className="space-y-3">
@@ -247,6 +297,41 @@ export function OwnerConsole() {
           </p>
         )}
       </div>
+
+      {onboarding && (
+        <div className="border border-[#75bfcf]/40 rounded-xl p-6 bg-[#75bfcf]/5 space-y-4">
+          <h2 className="text-[#75bfcf] text-lg">Onboarding checklist</h2>
+          <ol className="list-decimal list-inside text-sm text-white/75 space-y-2">
+            <li>Sign typed AuthZ MsgGrant(s) for grantee below (Keplr / injectived).</li>
+            <li>Fund grantee with INJ for MsgExec gas.</li>
+            <li>Deposit quote to owner subaccount {onboarding.subaccountId.slice(0, 18)}…</li>
+            <li>Copy agent token into agent runtime only.</li>
+            <li>
+              Optional: enable <code className="text-white/90">INTENTGUARD_EXECUTE=1</code> on
+              sidecar for live orders.
+            </li>
+          </ol>
+          <CopyField label="Grantee (AuthZ grantee)" value={onboarding.granteeAddress} />
+          <CopyField label="Subaccount" value={onboarding.subaccountId} />
+          <CopyField label="Agent token" value={onboarding.agentApiToken} />
+          <div className="pt-2 border-t border-white/10">
+            <p className="text-white/60 text-xs">
+              Msg types: {onboarding.grantPlan.msgTypes.join(", ")}
+            </p>
+            {onboarding.grantPlan.warnings.length > 0 && (
+              <p className="text-amber-200/80 text-xs mt-2">
+                {onboarding.grantPlan.warnings.join(" ")}
+              </p>
+            )}
+            <p className="text-white/50 text-xs mt-2">
+              Gateway enforces: {onboarding.grantPlan.gatewayEnforced.join("; ")}
+            </p>
+            <pre className="text-[10px] text-white/40 max-h-48 overflow-auto mt-2 border border-white/10 rounded p-2">
+              {JSON.stringify(onboarding.grantPlan, null, 2)}
+            </pre>
+          </div>
+        </div>
+      )}
 
       <div className="border border-white/10 rounded-xl p-6 bg-white/5 space-y-3">
         <h2 className="text-[#75bfcf] text-lg">Sessions</h2>

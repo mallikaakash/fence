@@ -1,3 +1,12 @@
+# IntentGuard v0.1.x
+
+## v0.1.1 (hardening)
+
+- Gateway binds `127.0.0.1` by default; Docker sets `DOCKER=1` → `0.0.0.0`
+- Owner auth on `POST /v1/grants/plan`; state/config files mode `0600`
+- `propose` is dry-run; daily margin increments on successful `execute` only
+- Console onboarding checklist + grant plan JSON; INSTALL + THREAT-MODEL
+
 # IntentGuard v0.1.0
 
 **Shippable sidecar product** — policy gateway + owner console + optional live MsgExec.

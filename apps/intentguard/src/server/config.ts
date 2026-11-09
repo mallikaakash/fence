@@ -4,6 +4,8 @@ import { randomBytes } from "node:crypto";
 
 export type GatewayConfig = {
   port: number;
+  /** Listen address — default loopback; set 0.0.0.0 in Docker. */
+  bindHost: string;
   dataDir: string;
   ownerApiKey: string;
   /** When true, POST /v1/execute may broadcast MsgExec (testnet/mainnet per network env). */
@@ -18,7 +20,7 @@ function defaultDataDir(): string {
 
 export function loadConfig(): GatewayConfig {
   const dataDir = defaultDataDir();
-  mkdirSync(dataDir, { recursive: true });
+  mkdirSync(dataDir, { recursive: true, mode: 0o700 });
 
   const configPath = join(dataDir, "config.json");
   let ownerApiKey = process.env.INTENTGUARD_OWNER_API_KEY;
@@ -37,6 +39,7 @@ export function loadConfig(): GatewayConfig {
     writeFileSync(
       configPath,
       JSON.stringify({ ownerApiKey, createdAt: new Date().toISOString() }, null, 2) + "\n",
+      { mode: 0o600 },
     );
     console.error(
       `[intentguard] Generated owner API key — set INTENTGUARD_OWNER_API_KEY or see ${configPath}`,
@@ -44,6 +47,9 @@ export function loadConfig(): GatewayConfig {
   }
 
   const port = Number(process.env.PORT ?? process.env.INTENTGUARD_PORT ?? 8787);
+  const bindHost =
+    process.env.INTENTGUARD_BIND ??
+    (process.env.DOCKER === "1" ? "0.0.0.0" : "127.0.0.1");
 
   const executeEnabled =
     process.env.INTENTGUARD_EXECUTE === "1" ||
@@ -59,5 +65,12 @@ export function loadConfig(): GatewayConfig {
     }
   }
 
-  return { port, dataDir, ownerApiKey, executeEnabled, ownerPrivateKeyHex };
+  return {
+    port,
+    bindHost,
+    dataDir,
+    ownerApiKey,
+    executeEnabled,
+    ownerPrivateKeyHex,
+  };
 }

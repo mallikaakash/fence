@@ -31,6 +31,8 @@ export class FileStore {
 
   save(state: PersistedState): void {
     state.updatedAt = new Date().toISOString();
-    writeFileSync(this.path, JSON.stringify(state, null, 2) + "\n");
+    writeFileSync(this.path, JSON.stringify(state, null, 2) + "\n", {
+      mode: 0o600,
+    });
   }
 }

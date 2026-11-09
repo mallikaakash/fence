@@ -193,19 +193,13 @@ export class IntentGuardGateway {
       };
     }
 
-    // Spike: we mark wouldSign without broadcasting until live signer is wired.
-    // Daily budget is reserved only on allow so demos accumulate usage.
-    if (!intent.reduceOnly) {
-      session.dailyMarginUsed = String(
-        Number(session.dailyMarginUsed) + Number(intent.margin),
-      );
-    }
-
+    // Propose is a dry-run policy check — daily budget increments on successful execute only.
     this.audit.append("propose_allowed", decision.reasons.join("; "), {
       sessionId,
       intent,
       wouldSign: true,
       signed: false,
+      dryRun: true,
     });
 
     return {
@@ -213,6 +207,8 @@ export class IntentGuardGateway {
       decisionReasons: decision.reasons,
       signed: false as const,
       wouldSign: true as const,
+      dryRun: true as const,
+      note: "Policy OK — no margin reserved until POST /v1/execute succeeds",
       sessionId,
       granteeAddress: session.granteeAddress,
     };
