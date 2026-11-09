@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { gatewayAuditEvents, gatewayHealth } from "@/lib/gateway/client";
 import type { GatewayHealthJson } from "@/lib/gateway/health-types";
 import { explorerTxUrl } from "@/lib/explorer";
+import { TxVerifyChip } from "@/components/intentguard/tx-verify-chip";
 import { fetchHostedStatus } from "@/lib/hosted";
 import { loadGatewaySettings, saveGatewaySettings } from "@/lib/gateway/storage";
 
@@ -137,14 +138,17 @@ export function LiveActivityPanel() {
                 <p className="text-white/80 mt-1">{ev.message}</p>
                 <p className="text-white/40 text-[10px] mt-1">{ev.at}</p>
                 {txHash ? (
-                  <a
-                    href={explorerTxUrl(txHash, network)}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-[#75bfcf] text-xs break-all hover:underline mt-1 inline-block"
-                  >
-                    {txHash}
-                  </a>
+                  <div className="mt-1 space-y-1">
+                    <a
+                      href={explorerTxUrl(txHash, network)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[#75bfcf] text-xs break-all hover:underline block"
+                    >
+                      {txHash}
+                    </a>
+                    <TxVerifyChip txHash={txHash} network={network} />
+                  </div>
                 ) : null}
               </li>
             );

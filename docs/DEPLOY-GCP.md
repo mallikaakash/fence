@@ -60,7 +60,20 @@ Map DNS per gcloud instructions. Add the web URL to gateway `INTENTGUARD_CORS_OR
 - **Min instances = 1** on gateway (~$10–15/mo region-dependent) for steadier owner console
 - GCS bucket: cents for testnet state
 
-## Execute on-chain
+## Enable execute (MsgExec)
+
+After grants are on-chain and the owner wallet is funded:
+
+```bash
+# Owner hex in Secret Manager (never in git):
+printf '%s' "$OWNER_HEX" | gcloud secrets create intentguard-owner-private-key --data-file=-
+chmod +x scripts/enable-gcp-execute.sh
+./scripts/enable-gcp-execute.sh
+```
+
+Console **Execute readiness** panel shows whether execute is enabled.
+
+## Execute on-chain (manual env)
 
 Same as local: fund wallets, typed MsgGrant, then set on the **gateway** service only:
 

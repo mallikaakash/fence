@@ -26,7 +26,9 @@ import {
   GatewaySecretsPanel,
   GrantTxPlanPanel,
 } from "@/components/intentguard/gateway-ux";
+import { ExecuteReadinessPanel } from "@/components/intentguard/execute-readiness";
 import { GrantBroadcastButton } from "@/components/intentguard/grant-broadcast-button";
+import { GrantRevokeButton } from "@/components/intentguard/grant-revoke-button";
 import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
 
 type SessionView = {
@@ -344,10 +346,11 @@ export function OwnerConsole() {
       </div>
       <GatewayConnectionWarnings baseUrl={settings.baseUrl} proxyMode={proxyMode} />
       <GatewaySecretsPanel onClear={clearSecrets} />
+      <ExecuteReadinessPanel />
       <p className="text-white/70 text-sm">
         {proxyMode
-          ? "Using hosted gateway proxy — owner key is injected on the server when INTENTGUARD_OWNER_API_KEY is set on Vercel."
-          : "Default: local sidecar at 127.0.0.1:8787 while npm run gateway runs on this machine. Prefer npm run web:dev for owner keys in localStorage."}
+          ? "Hosted gateway proxy — owner HTTP key is injected server-side. Agent token may stay in this browser only."
+          : "Default: local sidecar at 127.0.0.1:8787 while npm run gateway runs on this machine."}
       </p>
 
       <div className="flex flex-wrap gap-2 text-xs">
@@ -550,12 +553,18 @@ export function OwnerConsole() {
                   >
                     Grant tx plan
                   </button>
+                  <GrantRevokeButton
+                    granter={ownerInj}
+                    grantee={s.granteeAddress}
+                    network={healthInfo?.network === "mainnet" ? "mainnet" : "testnet"}
+                    onSuccess={() => void checkGrant(s.sessionId)}
+                  />
                   <button
                     type="button"
                     className="text-xs text-red-300 border border-red-400/40 px-3 py-1 rounded-full"
                     onClick={() => revoke(s.sessionId)}
                   >
-                    Revoke
+                    Revoke session (gateway)
                   </button>
                 </>
               )}
