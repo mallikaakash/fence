@@ -20,6 +20,10 @@ export type GatewaySession = {
   dailyMarginUsed: string;
   revoked: boolean;
   createdAt: string;
+  /** Owner granter for MsgExec + typed grants. */
+  ownerInjectiveAddress?: string;
+  subaccountId?: string;
+  subaccountIndex?: number;
 };
 
 export type PublicSessionView = {
@@ -54,6 +58,9 @@ export class IntentGuardGateway {
     /** Optional pre-generated key material (tests). */
     granteePrivateKeyHex?: string;
     granteeAddress?: string;
+    ownerInjectiveAddress?: string;
+    subaccountId?: string;
+    subaccountIndex?: number;
   }): { view: PublicSessionView; agent: AgentCredential } {
     const granteePrivateKeyHex =
       params.granteePrivateKeyHex ?? randomBytes(32).toString("hex");
@@ -72,6 +79,9 @@ export class IntentGuardGateway {
       dailyMarginUsed: "0",
       revoked: false,
       createdAt: new Date().toISOString(),
+      ownerInjectiveAddress: params.ownerInjectiveAddress,
+      subaccountId: params.subaccountId,
+      subaccountIndex: params.subaccountIndex,
     };
 
     this.sessions.set(sessionId, session);
@@ -99,6 +109,25 @@ export class IntentGuardGateway {
   getPublicSession(sessionId: string): PublicSessionView | undefined {
     const s = this.sessions.get(sessionId);
     return s ? this.toPublic(s) : undefined;
+  }
+
+  listPublicSessions(): PublicSessionView[] {
+    return [...this.sessions.values()].map((s) => this.toPublic(s));
+  }
+
+  /** Sidecar execute path only — never expose via agent APIs. */
+  getSessionForAgent(agentApiToken: string): GatewaySession | undefined {
+    const sessionId = this.tokenToSession.get(agentApiToken);
+    if (!sessionId) return undefined;
+    return this.sessions.get(sessionId);
+  }
+
+  recordMarginUse(sessionId: string, margin: string): void {
+    const session = this.sessions.get(sessionId);
+    if (!session) return;
+    session.dailyMarginUsed = String(
+      Number(session.dailyMarginUsed) + Number(margin),
+    );
   }
 
   /** Agent-facing propose — never returns key material. */
@@ -187,6 +216,18 @@ export class IntentGuardGateway {
       sessionId,
       granteeAddress: session.granteeAddress,
     };
+  }
+
+  /** Sidecar: restore a persisted session (includes grantee key material). */
+  importSession(session: GatewaySession): void {
+    this.sessions.set(session.sessionId, session);
+    if (!session.revoked) {
+      this.tokenToSession.set(session.agentApiToken, session.sessionId);
+    }
+  }
+
+  exportSessions(): GatewaySession[] {
+    return [...this.sessions.values()];
   }
 
   revoke(sessionId: string): PublicSessionView {

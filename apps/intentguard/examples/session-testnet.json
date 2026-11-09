@@ -1,0 +1,14 @@
+{
+  "ownerInjectiveAddress": "inj1yrvztj7g3x3009uhm03hgsp3fru6e4mdv7jpkz",
+  "subaccountIndex": 1,
+  "policy": {
+    "version": 1,
+    "marketIds": [
+      "0xdc70164d7120529c3cd84278c98df4151210c0447a65a2aab03459cf328de41e"
+    ],
+    "maxMarginPerOrder": "100",
+    "maxOrderNotional": "50",
+    "maxLeverage": 5,
+    "dailyMarginBudget": "500"
+  }
+}

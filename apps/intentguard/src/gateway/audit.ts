@@ -7,7 +7,9 @@ export type AuditEvent = {
     | "propose_denied"
     | "revoke"
     | "key_isolation_ok"
-    | "key_isolation_fail";
+    | "key_isolation_fail"
+    | "execute_allowed"
+    | "execute_denied";
   message: string;
   detail?: Record<string, unknown>;
 };
@@ -37,5 +39,10 @@ export class AuditLog {
 
   clear(): void {
     this.events = [];
+  }
+
+  /** Sidecar boot: restore persisted audit trail. */
+  replaceAll(events: AuditEvent[]): void {
+    this.events = [...events];
   }
 }

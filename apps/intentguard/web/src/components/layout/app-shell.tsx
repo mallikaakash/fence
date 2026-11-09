@@ -34,6 +34,12 @@ export function AppShell({ children }: Props) {
             >
               Grant Audit
             </Link>
+            <Link
+              href="/console"
+              className="text-white/70 hover:text-white transition-all duration-300 font-medium text-sm"
+            >
+              Console
+            </Link>
           </div>
         </div>
       </nav>

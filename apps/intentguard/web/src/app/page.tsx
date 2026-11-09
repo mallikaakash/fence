@@ -41,6 +41,12 @@ export default function Home() {
             </div>
             <div className="flex flex-wrap items-center gap-4">
               <Link
+                href="/console"
+                className="inline-flex items-center px-4 py-2 bg-orange-400/90 text-black rounded-md font-medium hover:bg-orange-400 transition-colors"
+              >
+                Owner console
+              </Link>
+              <Link
                 href="/portfolio"
                 className="inline-flex items-center px-4 py-2 border border-white/30 text-white rounded-md font-medium hover:bg-white/10 transition-colors"
               >

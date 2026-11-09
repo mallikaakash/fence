@@ -18,7 +18,11 @@ npm install
 npm test
 npm run demo
 npm run demo:pitch   # Demo Day: proofs + live read-only chain checks
+npm run gateway      # Sidecar HTTP API (product path) — see docs/PRODUCT.md
+npm run product:smoke
 ```
+
+Shippable install guide: [docs/INSTALL.md](../../docs/INSTALL.md) · Docker: `docker compose up` in this package.
 
 Demo runbook: [../../docs/DEMO.md](../../docs/DEMO.md)
 
