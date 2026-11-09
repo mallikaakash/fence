@@ -48,6 +48,12 @@ export function AppShell({ children }: Props) {
             >
               Console
             </Link>
+            <Link
+              href="/limitations"
+              className="text-white/50 hover:text-white transition-all duration-300 font-medium text-xs"
+            >
+              Limits
+            </Link>
           </div>
         </div>
       </nav>

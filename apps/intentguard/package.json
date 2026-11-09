@@ -1,7 +1,7 @@
 {
   "name": "@injective-buildathon/intentguard",
   "private": true,
-  "version": "0.1.8",
+  "version": "0.1.9",
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test src/**/*.test.ts src/**/**/*.test.ts",
@@ -19,6 +19,7 @@
     "platform:verify": "node --experimental-strip-types src/cli/platform-verify.ts",
     "ux:verify": "node --experimental-strip-types src/cli/ux-verify.ts",
     "agent:verify": "node --experimental-strip-types src/cli/agent-verify.ts",
+    "legal:verify": "node --experimental-strip-types src/cli/legal-verify.ts",
     "grant:broadcast": "node --experimental-strip-types src/cli/grant-broadcast.ts",
     "web:dev": "npm run dev --prefix web",
     "web:build": "npm run build --prefix web",

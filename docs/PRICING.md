@@ -39,9 +39,12 @@
 
 ## Honest limitations (all tiers)
 
+See [LIMITATIONS.md](./LIMITATIONS.md) (risk disclosure, not legal advice).
+
 - v0 is **derivative limit orders** + cancel typed grants — not market orders, not RFQ, not spot. See [PROTOCOL.md](./PROTOCOL.md).
 - Gateway integrity and sidecar host security are **your** operational responsibility. See [THREAT-MODEL.md](./THREAT-MODEL.md).
 - We do not custody owner or grantee keys in the hosted **demo** web app.
+- Marketing must not claim agents “cannot escape” policy — see approved language in LIMITATIONS.
 
 ## Contact / design partner
 

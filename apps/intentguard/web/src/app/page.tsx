@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { RiskDisclosure } from "@/components/intentguard/risk-disclosure";
 
 export default function Home() {
   return (
@@ -18,9 +19,9 @@ export default function Home() {
               </span>
             </h1>
             <p className="md:text-xl text-sm text-left mt-2 max-w-2xl text-white/80">
-              Typed exchange AuthZ, an isolated grantee signer, and gateway notional limits — so
-              agents propose trades without holding keys or escaping their mandate. Route A is live
-              on Injective testnet.
+              Typed exchange AuthZ, an isolated grantee signer, and gateway notional limits — agents
+              use scoped tokens while the sidecar denies out-of-policy proposes before broadcast.
+              Route A on Injective testnet.
             </p>
             <p className="text-sm text-left max-w-2xl text-amber-200/90 border border-amber-400/30 rounded-lg px-3 py-2 bg-amber-950/30">
               Owner console requires a{" "}
@@ -29,6 +30,7 @@ export default function Home() {
               <code className="text-amber-100/80">npm run web:dev</code> on your machine (not via
               hosted localhost).
             </p>
+            <RiskDisclosure compact />
           </div>
 
           <div className="flex flex-col gap-3">

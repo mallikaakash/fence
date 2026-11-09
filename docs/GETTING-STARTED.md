@@ -56,6 +56,7 @@ npm run gtm:verify
 npm run platform:verify
 npm run ux:verify
 npm run agent:verify
+npm run legal:verify
 ```
 
 Ops reference: [SRE.md](./SRE.md) · Web UX: [UX.md](./UX.md)

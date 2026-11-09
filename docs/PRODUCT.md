@@ -85,6 +85,8 @@ OpenAPI stub: `GET /v1/openapi.json`
 3. **Owner console** — `/console` + optional Vercel `/api/gateway` proxy (`INTENTGUARD_GATEWAY_URL`); local keys remain default for self-serve.
 4. **Design partner** — one team on mainnet with real agent traffic.
 
+Risk disclosure: [LIMITATIONS.md](./LIMITATIONS.md) · verify: `npm run legal:verify`
+
 ## What we are not claiming yet
 
 - Aggregate portfolio risk / partial-fill budgets  
@@ -98,7 +100,7 @@ Route A sidecar + typed grants + notional policy is the product core.
 ```bash
 cd apps/intentguard
 npm run check && npm test
-npm run product:smoke && npm run security:verify && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify && npm run ux:verify && npm run agent:verify
+npm run product:smoke && npm run security:verify && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify && npm run ux:verify && npm run agent:verify && npm run legal:verify
 npm run web:build
 ```
 
