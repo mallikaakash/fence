@@ -4,6 +4,8 @@ import { InnerPage } from "@/components/layout/inner-page";
 import { PolicyCapsCallout } from "@/components/intentguard/policy-caps-callout";
 import { RiskDisclosure } from "@/components/intentguard/risk-disclosure";
 import { OnboardingChecklist } from "@/components/intentguard/onboarding-checklist";
+import { RelatedProductsCallout } from "@/components/intentguard/related-products-callout";
+import { TestnetResourcesCallout } from "@/components/intentguard/testnet-resources-callout";
 
 export default function LimitationsPage() {
   return (
@@ -27,7 +29,9 @@ export default function LimitationsPage() {
               expiry; assistant keys never go to the agent app.
             </li>
           </ol>
+          <RelatedProductsCallout />
           <PolicyCapsCallout defaultOpen />
+          <TestnetResourcesCallout />
           <OnboardingChecklist />
           <RiskDisclosure />
           <Link

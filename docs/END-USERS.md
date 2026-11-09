@@ -18,6 +18,7 @@ You do **not** need GCP, terminal, or manual `agt_` tokens when you use the host
 | On-chain grant | Keplr approve on Protect — status chips show **On-chain grant: active** |
 | Assistant gas | ~0.2 INJ to the assistant address (button on Protect **Done**) |
 | Exchange margin | Deposit USDT on [Helix testnet](https://testnet.helixapp.com/) with the **same wallet** |
+| Testnet INJ (gas) | [Injective faucet](https://testnet.faucet.injective.network/) or [Google Cloud faucet](https://cloud.google.com/application/web3/faucet/injective/testnet) |
 | Execute | Hosted gateway has live execute enabled — small trades from Protect, Trade, or Demo agent |
 
 If a trade fails, the app shows a **plain hint** (gas, margin, or grant) instead of only raw chain text.

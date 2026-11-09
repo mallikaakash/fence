@@ -5,6 +5,7 @@ import { fetchHostedStatus } from "@/lib/hosted";
 import { gatewayHealth } from "@/lib/gateway/client";
 import type { GatewayHealthJson } from "@/lib/gateway/health-types";
 import { loadGatewaySettings, saveGatewaySettings } from "@/lib/gateway/storage";
+import { TestnetResourcesCallout } from "@/components/intentguard/testnet-resources-callout";
 
 export function ExecuteReadinessPanel() {
   const [health, setHealth] = useState<GatewayHealthJson | null>(null);
@@ -37,9 +38,10 @@ export function ExecuteReadinessPanel() {
           Gateway execute: {executeReady ? "enabled" : "off (propose-only)"}
         </li>
         <li>Owner typed MsgGrant on-chain (console → Check grant)</li>
-        <li>Funded subaccount margin on exchange</li>
+        <li>Funded subaccount margin on exchange (Helix testnet)</li>
         <li>Hosted live trading uses your session keys — no export to the browser</li>
       </ul>
+      <TestnetResourcesCallout />
     </div>
   );
 }

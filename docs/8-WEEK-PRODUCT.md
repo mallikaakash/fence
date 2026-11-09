@@ -2,7 +2,7 @@
 
 Ship a **real** end-user product on **Injective testnet only** ([NETWORK.md](./NETWORK.md)). Route A (typed AuthZ + gateway policy + isolated grantee) stays primary; Route B vault only if promotion criteria in [ROUTE-B.md](./ROUTE-B.md) are met.
 
-## Week 1–2 — Protect v2 (in progress)
+## Week 1–2 — Protect v2 (done)
 
 - [x] Multi-market selection (INJ + BTC testnet perps)
 - [x] Policy presets (Conservative / Standard / Custom)
@@ -40,8 +40,8 @@ Mainnet prep is **parked** — see [NETWORK.md](./NETWORK.md).
 - [x] Incident runbook (sidecar down, grant expiry, revoke) — [RUNBOOK.md](./RUNBOOK.md)
 - [x] Agent integrator guide — [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md) + Console copy panel
 - [x] Live web demo script — [DEMO-WEB.md](./DEMO-WEB.md)
-- [ ] Pitch deck ↔ testnet product parity review
-- [ ] Helix testnet + faucet links audit on all CTAs
+- [x] Pitch deck ↔ testnet product parity review — [PITCH.md](./PITCH.md)
+- [x] Helix testnet + faucet links audit — [TESTNET-LINKS.md](./TESTNET-LINKS.md) + `testnet-resources.ts`
 
 ## Deploy (when gateway or web changes)
 

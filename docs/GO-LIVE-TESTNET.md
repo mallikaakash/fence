@@ -40,7 +40,9 @@ curl -sS https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway/health | jq
 Each session has a **grantee** `inj1…` (Console → Sessions). The gateway holds that key; agents never see it.
 
 1. Copy grantee address from your active session.
-2. Send **~0.5–2 INJ** from your owner wallet (Keplr **Send**) or use the [testnet faucet](https://testnet.faucet.injective.network/) on the grantee address.
+2. Send **~0.5–2 INJ** from your owner wallet (Keplr **Send**) or use the [testnet faucet](https://testnet.faucet.injective.network/) / [GCP faucet](https://cloud.google.com/application/web3/faucet/injective/testnet) on the grantee address.
+
+Link audit: [TESTNET-LINKS.md](./TESTNET-LINKS.md).
 
 ## 3. Margin in trading subaccount
 

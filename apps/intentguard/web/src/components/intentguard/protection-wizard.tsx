@@ -4,6 +4,10 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { SPIKE_MARKET_ID } from "@/lib/constants";
 import {
+  INJECTIVE_TESTNET_FAUCET_URL,
+  HELIX_TESTNET_URL,
+} from "@/lib/testnet-resources";
+import {
   defaultSelectedMarketIds,
   TESTNET_PERP_MARKETS,
 } from "@/lib/markets-testnet";
@@ -520,7 +524,7 @@ export function ProtectionWizard() {
             <li>
               Deposit a little USDT to trade on{" "}
               <a
-                href="https://testnet.helixapp.com/"
+                href={HELIX_TESTNET_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="text-[#75bfcf] underline"
@@ -528,6 +532,18 @@ export function ProtectionWizard() {
                 Helix testnet
               </a>{" "}
               (same wallet).
+            </li>
+            <li>
+              Need INJ? Use the{" "}
+              <a
+                href={INJECTIVE_TESTNET_FAUCET_URL}
+                target="_blank"
+                rel="noreferrer"
+                className="text-[#75bfcf] underline"
+              >
+                testnet faucet
+              </a>{" "}
+              on your wallet or assistant address.
             </li>
           </ol>
           {executeEnabled ? (

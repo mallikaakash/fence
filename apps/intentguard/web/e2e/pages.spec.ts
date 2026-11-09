@@ -27,6 +27,12 @@ test.describe("IntentGuard pages", () => {
     });
   }
 
+  test("limitations mentions Helix bots contrast", async ({ page }) => {
+    await page.goto("/limitations");
+    await expect(page.getByText(/Helix trading bots/i)).toBeVisible();
+    await expect(page.getByText(/testnet faucet/i)).toBeVisible();
+  });
+
   test("footer links resolve", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("navigation", { name: "Secondary" }).getByRole("link", { name: "How it works" }).click();

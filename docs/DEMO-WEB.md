@@ -8,7 +8,7 @@
 | Item | Check |
 |------|--------|
 | Keplr on **injective-888** / testnet | Connected |
-| Wallet has **testnet INJ** | Faucet if needed |
+| Wallet has **testnet INJ** | [Injective faucet](https://testnet.faucet.injective.network/) or [GCP faucet](https://cloud.google.com/application/web3/faucet/injective/testnet) |
 | Optional live execute | ~0.2 INJ sent to **assistant** from Protect Done; small **USDT** on Helix testnet |
 | Browser | Hard refresh after deploy (`Cmd+Shift+R`) |
 

@@ -51,7 +51,9 @@ Trading MCP can sign transactions. Keep wallets off the machine until you delibe
 | Chosen track + spike | [brainstorm/CHOSEN.md](./brainstorm/CHOSEN.md), [INTENTGUARD-SPIKE.md](./brainstorm/INTENTGUARD-SPIKE.md) |
 | IntentGuard spec | [brainstorm/INTENTGUARD.md](./brainstorm/INTENTGUARD.md) |
 | Pasteable machine bootstrap | [prompts/claude-injective-bootstrap.md](./prompts/claude-injective-bootstrap.md) |
-| Demo Day runbook | [docs/DEMO.md](./docs/DEMO.md) |
+| Demo Day runbook | [docs/DEMO.md](./docs/DEMO.md), live web [DEMO-WEB.md](./docs/DEMO-WEB.md) |
+| Pitch (slide parity) | [docs/PITCH.md](./docs/PITCH.md) |
+| Hosted testnet app | https://intentguard-web-2lcs3sivbq-uc.a.run.app |
 | IntentGuard web UI | `npm run intentguard:web` → [apps/intentguard/web](./apps/intentguard/web) — hosted paths: `/start`, `/portfolio`, `/console` |
 | IntentGuard product | [docs/PRODUCT.md](./docs/PRODUCT.md), [GETTING-STARTED.md](./docs/GETTING-STARTED.md), [PRICING.md](./docs/PRICING.md) |
 | Release verify | `smoke` … `legal` (all `*:verify` in apps/intentguard) — [LIMITATIONS](./docs/LIMITATIONS.md) |
