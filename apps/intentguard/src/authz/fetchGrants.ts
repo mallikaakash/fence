@@ -1,4 +1,5 @@
 import type { RawGrant } from "./score.ts";
+import { parseLcdAuthorization } from "./parseLcdAuthz.ts";
 
 export type FetchGrantsResult = {
   network: string;
@@ -39,14 +40,17 @@ export async function fetchGranterGrants(params: {
   };
 
   const grants: RawGrant[] = (body.grants ?? []).map((g) => {
-    const typeUrl =
-      g.authorization?.typeUrl ?? g.authorization?.type_url ?? "unknown";
+    const parsed = parseLcdAuthorization(
+      g.authorization as Record<string, unknown> | undefined,
+    );
+    const typeUrl = parsed?.authorizationType ?? "unknown";
     return {
       grantee: g.grantee ?? "",
       authorizationType: typeUrl,
-      // LCD often packs msg inside any; leave msgTypeUrl unknown unless decoded
       msgTypeUrl: undefined,
       expiration: g.expiration,
+      subaccountId: parsed?.subaccountId,
+      marketIds: parsed?.marketIds,
     };
   });
 

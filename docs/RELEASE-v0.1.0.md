@@ -1,5 +1,13 @@
 # IntentGuard v0.1.x
 
+## v0.1.4 (protocol / DeFi engineer)
+
+- LCD AuthZ decode (`subaccount_id`, `market_ids`) + session scope match
+- `grantStatus.scopeMatch` vs `ready` (expiry)
+- `GET /v1/sessions/:id/grant-tx-plan`, `npm run grant:broadcast`
+- `npm run e2e:protocol` + live testnet test against spike grants
+- [PROTOCOL.md](./PROTOCOL.md)
+
 ## v0.1.3 (AppSec)
 
 - AES-256-GCM grantee key encryption at rest (`INTENTGUARD_DATA_KEY`)

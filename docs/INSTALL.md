@@ -95,6 +95,8 @@ Threat model: [THREAT-MODEL.md](./THREAT-MODEL.md)
 
 Full walkthrough: [E2E.md](./E2E.md)
 
+Protocol scope (markets, subaccount, limits): [PROTOCOL.md](./PROTOCOL.md)
+
 Public routes without secrets:
 
 - **Simulate** — offline policy demo

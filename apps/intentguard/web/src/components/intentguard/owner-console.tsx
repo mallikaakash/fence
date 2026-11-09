@@ -78,7 +78,7 @@ export function OwnerConsole() {
   const [onboarding, setOnboarding] = useState<CreateSessionPayload | null>(null);
   const [proposeResult, setProposeResult] = useState<string | null>(null);
   const [grantStatusById, setGrantStatusById] = useState<
-    Record<string, { ready: boolean; issues: string[] }>
+    Record<string, { ready: boolean; scopeMatch: boolean; issues: string[] }>
   >({});
   const [ownerInj, setOwnerInj] = useState("");
 
@@ -169,11 +169,16 @@ export function OwnerConsole() {
     try {
       const { res, json } = await gatewayGrantStatus(settings, sessionId);
       if (res.ok) {
-        const gs = (json as { grantStatus: { ready: boolean; issues: string[] } })
-          .grantStatus;
+        const gs = (json as {
+          grantStatus: { ready: boolean; scopeMatch: boolean; issues: string[] };
+        }).grantStatus;
         setGrantStatusById((prev) => ({
           ...prev,
-          [sessionId]: { ready: gs.ready, issues: gs.issues },
+          [sessionId]: {
+            ready: gs.ready,
+            scopeMatch: gs.scopeMatch,
+            issues: gs.issues,
+          },
         }));
       }
     } finally {
@@ -376,8 +381,12 @@ export function OwnerConsole() {
                       : "text-amber-200 text-xs"
                   }
                 >
-                  On-chain grant:{" "}
-                  {grantStatusById[s.sessionId].ready ? "ready" : "pending"}
+                  On-chain:{" "}
+                  {grantStatusById[s.sessionId].ready
+                    ? "ready"
+                    : grantStatusById[s.sessionId].scopeMatch
+                      ? "scope OK (check expiry)"
+                      : "pending"}
                 </span>
               )}
               {!s.revoked && (

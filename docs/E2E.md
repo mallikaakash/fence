@@ -33,15 +33,26 @@ npm run grant:instructions -- /tmp/ig-session.json
 
 Sign MsgGrant(s) as owner (Keplr, Leap, or `npm run spike` with funded `.spike/` keystore).
 
-## 4. Verify grant
+## 4. Grant tx plan + verify on-chain scope
 
 ```bash
 SESSION_ID="$(node -p "JSON.parse(require('fs').readFileSync('/tmp/ig-session.json')).session.sessionId")"
 curl -sS -H "Authorization: Bearer $OWNER_KEY" \
+  "http://127.0.0.1:8787/v1/sessions/$SESSION_ID/grant-tx-plan" | jq . > /tmp/ig-tx-plan.json
+```
+
+Sign grants (Keplr) or:
+
+```bash
+INTENTGUARD_OWNER_PRIVATE_KEY_HEX=… npm run grant:broadcast -- /tmp/ig-session.json
+```
+
+```bash
+curl -sS -H "Authorization: Bearer $OWNER_KEY" \
   "http://127.0.0.1:8787/v1/sessions/$SESSION_ID/grant-status" | jq .
 ```
 
-`grantStatus.ready` must be `true` before execute (default).
+`grantStatus.scopeMatch` = markets + subaccount; `grantStatus.ready` = scope + not expired (required for execute).
 
 ## 5. Agent policy check
 

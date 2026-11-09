@@ -9,6 +9,14 @@ describe("verifySessionGrantOnChain (local validation)", () => {
         granteeAddress: "inj1abc",
         ownerInjectiveAddress: undefined,
         revoked: false,
+        subaccountId: "0xsub",
+        policy: {
+          version: 1,
+          marketIds: ["0xm"],
+          maxMarginPerOrder: "1",
+          maxLeverage: 1,
+          dailyMarginBudget: "10",
+        },
       },
     });
     assert.equal(s.ready, false);
@@ -21,6 +29,14 @@ describe("verifySessionGrantOnChain (local validation)", () => {
         granteeAddress: "inj1abc",
         ownerInjectiveAddress: "inj1yrvztj7g3x3009uhm03hgsp3fru6e4mdv7jpkz",
         revoked: true,
+        subaccountId: "0xsub",
+        policy: {
+          version: 1,
+          marketIds: ["0xm"],
+          maxMarginPerOrder: "1",
+          maxLeverage: 1,
+          dailyMarginBudget: "10",
+        },
       },
     });
     assert.equal(s.ready, false);

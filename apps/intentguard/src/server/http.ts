@@ -11,6 +11,7 @@ import { loadConfig, rotateOwnerApiKey, type GatewayConfig } from "./config.ts";
 import { SecureFileStore } from "./secureStore.ts";
 import { executeAgentIntent } from "./execute.ts";
 import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
+import { buildGrantTxPlan } from "../authz/buildGrantTx.ts";
 import { safeEqual } from "./auth.ts";
 import { RateLimiter } from "./rateLimit.ts";
 
@@ -127,7 +128,7 @@ export function startGatewayServer() {
         return send(req, res, 200, {
           ok: true,
           service: "intentguard-gateway",
-          version: "0.1.3",
+          version: "0.1.4",
           executeEnabled: config.executeEnabled,
           network: config.network,
           requireOnChainGrant: config.requireOnChainGrant,
@@ -263,6 +264,36 @@ export function startGatewayServer() {
           network: mainnet ? "mainnet" : config.network,
         });
         return send(req, res, 200, { sessionId: id, grantStatus: status });
+      }
+
+      const grantTxMatch = path.match(/^\/v1\/sessions\/([^/]+)\/grant-tx-plan$/);
+      if (req.method === "GET" && grantTxMatch) {
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        const id = grantTxMatch[1]!;
+        const session = gateway.getSessionRecord(id);
+        if (!session) return send(req, res, 404, { error: "session not found" });
+        if (!session.ownerInjectiveAddress || !session.subaccountId) {
+          return send(req, res, 400, {
+            error: "session missing ownerInjectiveAddress or subaccountId",
+          });
+        }
+        const plan = planTradingGrant({
+          granteeAddress: session.granteeAddress,
+          subaccountId: session.subaccountId,
+          policy: session.policy,
+        });
+        const txPlan = buildGrantTxPlan({
+          granter: session.ownerInjectiveAddress,
+          grantee: session.granteeAddress,
+          plan,
+        });
+        return send(req, res, 200, {
+          sessionId: id,
+          grantPlan: plan,
+          txPlan,
+          scopeNote:
+            "v0: derivative limit + cancel only — gateway enforces notional/leverage",
+        });
       }
 
       const revokeMatch = path.match(/^\/v1\/sessions\/([^/]+)\/revoke$/);
