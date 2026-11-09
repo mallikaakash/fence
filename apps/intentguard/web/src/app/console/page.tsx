@@ -1,7 +1,7 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { InnerPage } from "@/components/layout/inner-page";
+import { AdvancedConsoleShell } from "@/components/intentguard/advanced-console-shell";
 import { AgentIntegrationPanel } from "@/components/intentguard/agent-integration-panel";
-import { OwnerConsole } from "@/components/intentguard/owner-console";
 
 export default function ConsolePage() {
   return (
@@ -12,7 +12,7 @@ export default function ConsolePage() {
       >
         <div className="space-y-6">
           <AgentIntegrationPanel />
-          <OwnerConsole embedded />
+          <AdvancedConsoleShell />
         </div>
       </InnerPage>
     </AppShell>

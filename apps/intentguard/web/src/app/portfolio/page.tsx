@@ -1,8 +1,6 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { InnerPage } from "@/components/layout/inner-page";
 import { GrantAuditPanel } from "@/components/intentguard/grant-audit-panel";
-import { PolicyCapsCallout } from "@/components/intentguard/policy-caps-callout";
-
 export default function PortfolioPage() {
   return (
     <AppShell>
@@ -11,7 +9,6 @@ export default function PortfolioPage() {
         subtitle="Scan your wallet for risky AI trading permissions. Testnet only — this checks AuthZ grants, not open positions."
       >
         <div className="space-y-5">
-          <PolicyCapsCallout />
           <div className="glass-card p-5 md:p-6">
             <GrantAuditPanel />
           </div>

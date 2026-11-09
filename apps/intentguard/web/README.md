@@ -16,14 +16,14 @@ Open [http://localhost:3001](http://localhost:3001).
 |-------|---------|
 | `/` | Product home |
 | `/trade` | Policy simulator (calls shared `evaluateTradeIntent`) |
-| `/history` | Testnet proof txs from `../.spike/*.json` |
+| `/history` | Live gateway audit log (export JSON/CSV) |
 | `/portfolio` | Grant auditor (LCD) |
 
 API routes import policy/authz code from `../src/` via Next `externalDir`.
 
-## Proofs
+## Activity log (hosted)
 
-Run spike locally so `/history` has data:
+After **Protect**, events appear on `/history`. CLI spike proofs: `npm run demo:pitch` in `apps/intentguard`.
 
 ```bash
 cd ..

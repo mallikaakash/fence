@@ -150,13 +150,13 @@ export function LiveActivityPanel() {
         <p className="text-white/50 text-sm">Loading gateway activity…</p>
       ) : events.length === 0 ? (
         <p className="text-white/60 text-sm border border-white/10 rounded-lg p-4 bg-black/20">
-          No audit events yet. Create a session in{" "}
-          <a href="/console" className="text-[#75bfcf] underline">
-            Owner console
+          No audit events yet. Finish{" "}
+          <a href="/start" className="text-[#75bfcf] underline">
+            Protect
           </a>{" "}
-          and run a policy test on{" "}
+          or try{" "}
           <a href="/trade" className="text-[#75bfcf] underline">
-            Policy test
+            Try limits
           </a>
           .
         </p>
