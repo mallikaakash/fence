@@ -65,6 +65,42 @@ export function LiveActivityPanel() {
 
   const network = health?.network === "mainnet" ? "mainnet" : "testnet";
 
+  function exportJson() {
+    const blob = new Blob([JSON.stringify({ exportedAt: new Date().toISOString(), events }, null, 2)], {
+      type: "application/json",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `intentguard-audit-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportCsv() {
+    const header = ["at", "type", "message", "phase", "txHash"];
+    const rows = events.map((ev) => {
+      const txHash =
+        typeof ev.detail?.txHash === "string" ? ev.detail.txHash.replace(/"/g, '""') : "";
+      const msg = ev.message.replace(/"/g, '""');
+      const phase =
+        typeof ev.detail?.broadcast === "boolean"
+          ? ev.detail.broadcast
+            ? "on-chain"
+            : "off-chain"
+          : "";
+      return `"${ev.at}","${ev.type}","${msg}","${phase}","${txHash}"`;
+    });
+    const csv = [header.join(","), ...rows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `intentguard-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div className="space-y-4">
       <div className="grid gap-3 md:grid-cols-3">
@@ -97,6 +133,17 @@ export function LiveActivityPanel() {
 
       {error && !events.length ? (
         <p className="text-amber-200/90 text-sm">{error}</p>
+      ) : null}
+
+      {events.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className="pressable-button teal text-xs" onClick={exportJson}>
+            Export JSON
+          </button>
+          <button type="button" className="pressable-button muted text-xs" onClick={exportCsv}>
+            Export CSV
+          </button>
+        </div>
       ) : null}
 
       {loading ? (

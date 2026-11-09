@@ -24,11 +24,15 @@ If a trade fails, the app shows a **plain hint** (gas, margin, or grant) instead
 
 **Daily margin left** resets at **midnight UTC** per protection session (not total portfolio exposure).
 
+## Connect an AI agent or script
+
+After **Protect**, open [/console](https://intentguard-web-2lcs3sivbq-uc.a.run.app/console) → **Connect your agent** (copy `agt_…` + sample `curl`). Full guide: [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md).
+
 ## What still needs Advanced console
 
 | Goal | Where |
 |------|--------|
-| Connect your own bot | Copy `agt_…` token from [/console](https://intentguard-web-2lcs3sivbq-uc.a.run.app/console) |
+| Owner sessions / probes | Rest of [/console](https://intentguard-web-2lcs3sivbq-uc.a.run.app/console) |
 | Operator key rotation | Server-side only (not exposed in the browser) |
 
 ## Honest limit

@@ -35,9 +35,11 @@ Ship a **real** end-user product on **Injective testnet only** ([NETWORK.md](./N
 
 Mainnet prep is **parked** — see [NETWORK.md](./NETWORK.md).
 
-- [ ] Rate limits on gateway propose/execute
-- [ ] Audit export (CSV/JSON) for /history
-- [ ] Incident runbook (sidecar down, grant expiry, revoke)
+- [x] Rate limits on gateway propose/execute (`INTENTGUARD_AGENT_PROPOSE_PER_MIN`, `INTENTGUARD_AGENT_EXECUTE_PER_MIN`)
+- [x] Audit export (CSV/JSON) for /history
+- [x] Incident runbook (sidecar down, grant expiry, revoke) — [RUNBOOK.md](./RUNBOOK.md)
+- [x] Agent integrator guide — [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md) + Console copy panel
+- [x] Live web demo script — [DEMO-WEB.md](./DEMO-WEB.md)
 - [ ] Pitch deck ↔ testnet product parity review
 - [ ] Helix testnet + faucet links audit on all CTAs
 

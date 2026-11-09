@@ -43,7 +43,11 @@ npm run demo
 
 Policy allow/deny/revoke + sample Grant Auditor narrative.
 
-## Web UI (aleo-mvp shell)
+## Web UI (hosted demo — **start here for judges**)
+
+See **[DEMO-WEB.md](./DEMO-WEB.md)** — 3-minute testnet flow (Protect → limits → agent → console).
+
+Legacy local dev:
 
 ```bash
 npm run intentguard:web

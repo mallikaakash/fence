@@ -96,6 +96,14 @@ export function startGatewayServer() {
     windowMs: 60_000,
     maxRequests: config.rateLimitPerMinute,
   });
+  const agentProposeLimiter = new RateLimiter({
+    windowMs: 60_000,
+    maxRequests: config.agentProposeRateLimitPerMinute,
+  });
+  const agentExecuteLimiter = new RateLimiter({
+    windowMs: 60_000,
+    maxRequests: config.agentExecuteRateLimitPerMinute,
+  });
 
   let shuttingDown = false;
   let inFlight = 0;
@@ -387,6 +395,13 @@ export function startGatewayServer() {
         if (!token?.startsWith("agt_")) {
           return send(req, res, 401, { error: "agent Bearer agt_… required" });
         }
+        const agentRetry = agentProposeLimiter.check(`propose:${token}`);
+        if (agentRetry !== null) {
+          return send(req, res, 429, {
+            error: "agent propose rate limit exceeded",
+            retryAfterSeconds: agentRetry,
+          });
+        }
         const body = (await readBody(req, config.maxBodyBytes)) as {
           intent?: TradeIntent;
         };
@@ -422,6 +437,13 @@ export function startGatewayServer() {
         const token = bearer(req);
         if (!token?.startsWith("agt_")) {
           return send(req, res, 401, { error: "agent Bearer agt_… required" });
+        }
+        const agentRetry = agentExecuteLimiter.check(`execute:${token}`);
+        if (agentRetry !== null) {
+          return send(req, res, 429, {
+            error: "agent execute rate limit exceeded",
+            retryAfterSeconds: agentRetry,
+          });
         }
         if (!config.executeEnabled) {
           return send(req, res, 503, {

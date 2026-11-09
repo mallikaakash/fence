@@ -22,12 +22,23 @@ test.describe("End user — first visit", () => {
 
   test("nav mirrors primary user paths", async ({ page }) => {
     await page.goto("/");
-    const nav = page.getByRole("navigation", { name: "Main" }).first();
-    await nav.getByRole("link", { name: "Try limits" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .first()
+      .getByRole("link", { name: "Try limits" })
+      .click();
     await expect(page).toHaveURL(/\/trade/);
-    await nav.getByRole("link", { name: "Demo agent" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .first()
+      .getByRole("link", { name: "Demo agent" })
+      .click();
     await expect(page).toHaveURL(/\/agent/);
-    await nav.getByRole("link", { name: "Grant audit" }).click();
+    await page
+      .getByRole("navigation", { name: "Main" })
+      .first()
+      .getByRole("link", { name: "Grant audit" })
+      .click();
     await expect(page).toHaveURL(/\/portfolio/);
   });
 

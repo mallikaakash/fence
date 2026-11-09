@@ -21,6 +21,10 @@ export type GatewayConfig = {
   corsOrigins: string[];
   maxBodyBytes: number;
   rateLimitPerMinute: number;
+  /** Per `agt_` token — POST /v1/propose */
+  agentProposeRateLimitPerMinute: number;
+  /** Per `agt_` token — POST /v1/execute */
+  agentExecuteRateLimitPerMinute: number;
   configPath: string;
 };
 
@@ -105,6 +109,12 @@ export function loadConfig(): GatewayConfig {
   const rateLimitPerMinute = Number(
     process.env.INTENTGUARD_RATE_LIMIT_PER_MIN ?? 120,
   );
+  const agentProposeRateLimitPerMinute = Number(
+    process.env.INTENTGUARD_AGENT_PROPOSE_PER_MIN ?? 90,
+  );
+  const agentExecuteRateLimitPerMinute = Number(
+    process.env.INTENTGUARD_AGENT_EXECUTE_PER_MIN ?? 30,
+  );
 
   return {
     port,
@@ -120,6 +130,8 @@ export function loadConfig(): GatewayConfig {
     corsOrigins,
     maxBodyBytes,
     rateLimitPerMinute,
+    agentProposeRateLimitPerMinute,
+    agentExecuteRateLimitPerMinute,
     configPath,
   };
 }
