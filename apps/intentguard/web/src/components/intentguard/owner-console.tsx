@@ -9,6 +9,7 @@ import {
   gatewayGrantTxPlan,
   gatewayHealth,
   gatewayListSessions,
+  gatewayExecute,
   gatewayPropose,
   gatewayRevokeSession,
 } from "@/lib/gateway/client";
@@ -78,7 +79,7 @@ function CopyField({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function OwnerConsole() {
+export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
   const [settings, setSettings] = useState<GatewaySettings>({
     baseUrl: "http://127.0.0.1:8787",
     ownerApiKey: "",
@@ -92,6 +93,7 @@ export function OwnerConsole() {
   const [lastAgentToken, setLastAgentToken] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<CreateSessionPayload | null>(null);
   const [proposeResult, setProposeResult] = useState<string | null>(null);
+  const [executeResult, setExecuteResult] = useState<string | null>(null);
   const [grantStatusById, setGrantStatusById] = useState<
     Record<string, { ready: boolean; scopeMatch: boolean; issues: string[] }>
   >({});
@@ -125,6 +127,12 @@ export function OwnerConsole() {
       cancelled = true;
     };
   }, [settings.baseUrl, settings.ownerApiKey]);
+
+  useEffect(() => {
+    if (!settings.baseUrl) return;
+    void refreshSessions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load when gateway URL is known
+  }, [settings.baseUrl]);
 
   const persist = useCallback((next: Partial<GatewaySettings>) => {
     setSettings((prev) => {
@@ -309,27 +317,29 @@ export function OwnerConsole() {
     }
   }
 
+  function sampleIntent(mode: "ok" | "deny") {
+    return mode === "deny"
+      ? {
+          marketId: SPIKE_MARKET_ID,
+          margin: "5",
+          leverage: 2,
+          price: "100",
+          quantity: "1",
+        }
+      : {
+          marketId: SPIKE_MARKET_ID,
+          margin: "2",
+          leverage: 2,
+          price: "1",
+          quantity: "2",
+        };
+  }
+
   async function testPropose(mode: "ok" | "deny") {
     setBusy(true);
     setProposeResult(null);
-    const intent =
-      mode === "deny"
-        ? {
-            marketId: SPIKE_MARKET_ID,
-            margin: "5",
-            leverage: 2,
-            price: "100",
-            quantity: "1",
-          }
-        : {
-            marketId: SPIKE_MARKET_ID,
-            margin: "2",
-            leverage: 2,
-            price: "1",
-            quantity: "2",
-          };
     try {
-      const { res, json } = await gatewayPropose(settings, intent);
+      const { res, json } = await gatewayPropose(settings, sampleIntent(mode));
       setProposeResult(`${res.status} ${JSON.stringify(json)}`);
     } catch (e) {
       setProposeResult(e instanceof Error ? e.message : String(e));
@@ -338,10 +348,32 @@ export function OwnerConsole() {
     }
   }
 
+  async function testExecute() {
+    if (!healthInfo?.executeEnabled) {
+      setExecuteResult(
+        "Gateway execute is off — add owner hex to GCP Secret Manager and run scripts/enable-gcp-execute.sh (see docs/GO-LIVE-TESTNET.md).",
+      );
+      return;
+    }
+    setBusy(true);
+    setExecuteResult(null);
+    const intent = sampleIntent("ok");
+    try {
+      const { res, json } = await gatewayExecute(settings, intent);
+      setExecuteResult(`${res.status} ${JSON.stringify(json)}`);
+    } catch (e) {
+      setExecuteResult(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
-    <section className="space-y-8 max-w-3xl mx-auto px-6 pt-32 pb-20">
+    <section className={embedded ? "space-y-6" : "space-y-8 max-w-3xl mx-auto px-6 pt-32 pb-20"}>
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
+        {!embedded ? (
+          <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
+        ) : null}
         <GatewayNetworkChip health={healthInfo} />
       </div>
       <GatewayConnectionWarnings baseUrl={settings.baseUrl} proxyMode={proxyMode} />
@@ -432,10 +464,7 @@ export function OwnerConsole() {
 
       <div className="border border-white/10 rounded-xl p-6 bg-white/5 space-y-4">
         <h2 className="text-[#75bfcf] text-lg">New session</h2>
-        <OwnerWalletConnect
-          network={healthInfo?.network === "mainnet" ? "mainnet" : "testnet"}
-          onAddress={setOwnerInj}
-        />
+        <OwnerWalletConnect network="testnet" onAddress={setOwnerInj} />
         <input
           placeholder="Owner inj1… address"
           className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-white text-sm"
@@ -599,6 +628,32 @@ export function OwnerConsole() {
         </div>
         {proposeResult && (
           <pre className="text-xs text-white/60 mt-2 whitespace-pre-wrap">{proposeResult}</pre>
+        )}
+      </div>
+
+      <div className="border border-orange-400/30 rounded-xl p-6 bg-orange-950/20 space-y-3">
+        <h2 className="text-orange-300 text-lg">Live execute (MsgExec)</h2>
+        <p className="text-white/50 text-xs">
+          <code className="text-white/70">POST /v1/execute</code> runs policy again, then broadcasts
+          a derivative limit order via AuthZ MsgExec. Requires funded grantee gas, subaccount margin,
+          and owner key on the gateway only.
+        </p>
+        <button
+          type="button"
+          disabled={busy || !settings.agentApiToken || !healthInfo?.executeEnabled}
+          onClick={() => void testExecute()}
+          className="text-sm px-4 py-2 rounded-full border border-orange-400/50 text-orange-200 hover:bg-orange-400/10 disabled:opacity-40"
+        >
+          Execute in-policy test intent
+        </button>
+        {!healthInfo?.executeEnabled && (
+          <p className="text-amber-200/80 text-xs">
+            Execute disabled on gateway — complete{" "}
+            <code className="text-white/80">docs/GO-LIVE-TESTNET.md</code> on your machine.
+          </p>
+        )}
+        {executeResult && (
+          <pre className="text-xs text-white/60 whitespace-pre-wrap">{executeResult}</pre>
         )}
       </div>
 

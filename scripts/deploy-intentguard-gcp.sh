@@ -82,6 +82,7 @@ for secret in intentguard-data-key intentguard-owner-api-key; do
 done
 
 echo "Deploying gateway ($GW_SERVICE)…"
+# Product scope: testnet only — see docs/NETWORK.md (INJECTIVE_NETWORK=testnet)
 cd "$IG"
 gcloud run deploy "$GW_SERVICE" \
   --project "$PROJECT_ID" \
@@ -94,7 +95,7 @@ gcloud run deploy "$GW_SERVICE" \
   --cpu 1 \
   --min-instances 1 \
   --max-instances 3 \
-  --set-env-vars "DOCKER=1,INJECTIVE_NETWORK=testnet,INTENTGUARD_REQUIRE_DATA_KEY=1,INTENTGUARD_DATA_DIR=/data/.intentguard,INTENTGUARD_REQUIRE_ONCHAIN_GRANT=1" \
+  --set-env-vars "DOCKER=1,INJECTIVE_NETWORK=testnet,INTENTGUARD_EXECUTE=1,INTENTGUARD_REQUIRE_DATA_KEY=1,INTENTGUARD_DATA_DIR=/data/.intentguard,INTENTGUARD_REQUIRE_ONCHAIN_GRANT=1" \
   --set-secrets "INTENTGUARD_DATA_KEY=intentguard-data-key:latest,INTENTGUARD_OWNER_API_KEY=intentguard-owner-api-key:latest" \
   --add-volume "name=igdata,type=cloud-storage,bucket=${BUCKET}" \
   --add-volume-mount "volume=igdata,mount-path=/data"

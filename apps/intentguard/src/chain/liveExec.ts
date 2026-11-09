@@ -15,6 +15,7 @@ import {
 } from "./msgExec.ts";
 import type { SpikeWallet } from "./keys.ts";
 import { V0_TRADING_MSG_TYPES } from "../authz/types.ts";
+import { humanizeBroadcastError } from "./execUserHints.ts";
 
 export type LiveExecResult =
   | {
@@ -42,6 +43,8 @@ export type LiveExecResult =
       broadcast: false;
       approvalPayloadHash: string;
       chain: MsgExecAttemptResult;
+      userHint?: string;
+      errorCode?: string;
     };
 
 /**
@@ -145,14 +148,18 @@ export async function proposeAndExecLimitOrder(params: {
   });
 
   if (!chain.ok) {
+    const raw = chain.error ?? "broadcast failed";
+    const { hint, code } = humanizeBroadcastError(raw);
     return {
       status: "denied",
       stage: "broadcast",
-      reasons: [chain.error ?? "broadcast failed"],
+      reasons: [raw],
       signed: true,
       broadcast: false,
       approvalPayloadHash: approval.payloadHash,
       chain,
+      userHint: hint,
+      errorCode: code,
     };
   }
 

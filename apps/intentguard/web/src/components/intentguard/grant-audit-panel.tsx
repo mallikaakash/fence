@@ -12,7 +12,6 @@ type AuditResponse = {
 
 export function GrantAuditPanel() {
   const [granter, setGranter] = useState("");
-  const [mainnet, setMainnet] = useState(false);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<AuditResponse | null>(null);
 
@@ -21,7 +20,7 @@ export function GrantAuditPanel() {
     setResult(null);
     try {
       const res = await fetch(
-        `/api/audit?granter=${encodeURIComponent(granter)}${mainnet ? "&mainnet=1" : ""}`,
+        `/api/audit?granter=${encodeURIComponent(granter)}`,
         { cache: "no-store" },
       );
       setResult((await res.json()) as AuditResponse);
@@ -38,31 +37,25 @@ export function GrantAuditPanel() {
   return (
     <div className="space-y-4 text-white">
       <p className="text-sm text-white/70">
-        Live Injective LCD — decodes grants and flags risky GenericAuthorization.
-        Does not create or revoke grants (use Owner console).
+        Queries Injective testnet for AuthZ grants and highlights risky generic permissions. To create
+        or revoke protection, use{" "}
+        <a href="/start" className="text-[#75bfcf] underline">
+          Protect
+        </a>
+        .
       </p>
-      <OwnerWalletConnect
-        network={mainnet ? "mainnet" : "testnet"}
-        onAddress={setGranter}
-      />
-      <div className="flex flex-col sm:flex-row gap-3">
+      <p className="text-[10px] text-[#75bfcf]/80 uppercase tracking-wide">Injective testnet only</p>
+      <OwnerWalletConnect network="testnet" onAddress={setGranter} />
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <input
           aria-label="granter address"
-          className="flex-1 bg-black/40 border border-white/30 rounded px-3 py-2 text-sm font-mono"
+          className="flex-1 min-h-[42px] bg-black/40 border border-white/30 rounded-md px-3 py-2 text-sm font-mono"
           value={granter}
           onChange={(e) => setGranter(e.target.value)}
         />
-        <label className="flex items-center gap-2 text-sm text-white/80 whitespace-nowrap">
-          <input
-            type="checkbox"
-            checked={mainnet}
-            onChange={(e) => setMainnet(e.target.checked)}
-          />
-          Mainnet
-        </label>
         <button
           type="button"
-          className="pressable-button teal"
+          className="pressable-button teal shrink-0 min-w-[8.5rem]"
           disabled={busy}
           onClick={run}
         >

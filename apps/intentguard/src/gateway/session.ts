@@ -4,6 +4,7 @@ import { maybeDispatchWebhook } from "../server/webhooks.ts";
 import { explainPolicy } from "../policy/explain.ts";
 import type { IntentGuardPolicy, TradeIntent } from "../policy/types.ts";
 import { AuditLog } from "./audit.ts";
+import { ensureDailyMarginCurrentDay } from "./dailyBudget.ts";
 import {
   assertAgentHasNoSigningKey,
   isGranteeMaterialExposedToAgent,
@@ -19,6 +20,8 @@ export type GatewaySession = {
   granteePrivateKeyHex: string;
   policy: IntentGuardPolicy;
   dailyMarginUsed: string;
+  /** UTC day (YYYY-MM-DD) for dailyMarginUsed. */
+  dailyMarginDay?: string;
   revoked: boolean;
   createdAt: string;
   /** Owner granter for MsgExec + typed grants. */
@@ -27,6 +30,8 @@ export type GatewaySession = {
   subaccountIndex?: number;
   /** ISO time after which agent token is rejected. */
   agentTokenExpiresAt?: string;
+  /** On-chain MsgGrant expiry (seconds from grant time). Default 24h in planGrant. */
+  grantExpirySeconds?: number;
 };
 
 export type PublicSessionView = {
@@ -67,6 +72,7 @@ export class IntentGuardGateway {
     subaccountId?: string;
     subaccountIndex?: number;
     agentTokenTtlMs?: number;
+    grantExpirySeconds?: number;
   }): { view: PublicSessionView; agent: AgentCredential } {
     const granteePrivateKeyHex =
       params.granteePrivateKeyHex ?? randomBytes(32).toString("hex");
@@ -92,6 +98,7 @@ export class IntentGuardGateway {
       subaccountId: params.subaccountId,
       subaccountIndex: params.subaccountIndex,
       agentTokenExpiresAt: new Date(Date.now() + ttl).toISOString(),
+      grantExpirySeconds: params.grantExpirySeconds,
     };
 
     this.sessions.set(sessionId, session);
@@ -135,9 +142,15 @@ export class IntentGuardGateway {
   recordMarginUse(sessionId: string, margin: string): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
+    ensureDailyMarginCurrentDay(session);
     session.dailyMarginUsed = String(
       Number(session.dailyMarginUsed) + Number(margin),
     );
+  }
+
+  /** Apply UTC day rollover before policy checks or summaries. */
+  touchSessionBudget(session: GatewaySession): void {
+    ensureDailyMarginCurrentDay(session);
   }
 
   /** Agent-facing propose — never returns key material. */
@@ -163,6 +176,7 @@ export class IntentGuardGateway {
     }
 
     const session = this.sessions.get(sessionId);
+    if (session) this.touchSessionBudget(session);
     if (
       session?.agentTokenExpiresAt &&
       Date.now() >= Date.parse(session.agentTokenExpiresAt)
@@ -282,6 +296,42 @@ export class IntentGuardGateway {
 
   getSessionRecord(sessionId: string): GatewaySession | undefined {
     return this.sessions.get(sessionId);
+  }
+
+  /** Agent-safe session summary (no keys). */
+  getAgentSessionSummary(agentApiToken: string):
+    | {
+        sessionId: string;
+        revoked: boolean;
+        dailyMarginUsed: string;
+        dailyMarginBudget: string;
+        dailyMarginRemaining: string;
+        maxOrderNotional: string;
+        marketIds: string[];
+        granteeAddress: string;
+        ownerInjectiveAddress?: string;
+      }
+    | undefined {
+    const session = this.getSessionForAgent(agentApiToken);
+    if (!session) return undefined;
+    this.touchSessionBudget(session);
+    const budget = Number(session.policy.dailyMarginBudget);
+    const used = Number(session.dailyMarginUsed);
+    const remaining = Number.isFinite(budget) && Number.isFinite(used)
+      ? Math.max(0, budget - used)
+      : 0;
+    return {
+      sessionId: session.sessionId,
+      revoked: session.revoked,
+      dailyMarginUsed: session.dailyMarginUsed,
+      dailyMarginBudget: session.policy.dailyMarginBudget,
+      dailyMarginRemaining: String(remaining),
+      dailyMarginDay: session.dailyMarginDay,
+      maxOrderNotional: session.policy.maxOrderNotional,
+      marketIds: session.policy.marketIds,
+      granteeAddress: session.granteeAddress,
+      ownerInjectiveAddress: session.ownerInjectiveAddress,
+    };
   }
 
   private toPublic(session: GatewaySession): PublicSessionView {

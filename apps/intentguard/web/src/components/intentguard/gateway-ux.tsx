@@ -27,8 +27,8 @@ export function EnvironmentRibbon() {
     return (
       <div className="fixed top-0 inset-x-0 z-[60] bg-[#0d3d4a]/95 border-b border-[#75bfcf]/40 text-[#c8ecf4] text-xs text-center py-1.5 px-3">
         {onConsole
-          ? "Hosted production — console uses Vercel proxy to your sidecar."
-          : "Hosted production — grant audit is public; owner flows use /console with sidecar proxy."}
+          ? "Hosted IntentGuard · Injective testnet — console proxies to the gateway."
+          : "Hosted IntentGuard · Injective testnet — protect, trade, and grant audit in the browser."}
       </div>
     );
   }

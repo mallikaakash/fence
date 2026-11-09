@@ -239,6 +239,7 @@ export function startGatewayServer() {
           policy?: IntentGuardPolicy;
           ownerInjectiveAddress?: string;
           subaccountIndex?: number;
+          grantExpirySeconds?: number;
         };
         if (!body.policy?.marketIds?.length) {
           return send(req, res, 400, { error: "policy.marketIds required" });
@@ -259,6 +260,12 @@ export function startGatewayServer() {
           }
         }
 
+        const grantExpirySeconds =
+          typeof body.grantExpirySeconds === "number" &&
+          body.grantExpirySeconds > 60
+            ? Math.floor(body.grantExpirySeconds)
+            : undefined;
+
         const { view, agent } = gateway.createSession({
           policy: body.policy,
           granteeAddress,
@@ -266,12 +273,14 @@ export function startGatewayServer() {
           ownerInjectiveAddress: body.ownerInjectiveAddress,
           subaccountId,
           subaccountIndex: subIndex,
+          grantExpirySeconds,
         });
 
         const plan = planTradingGrant({
           granteeAddress,
           subaccountId,
           policy: body.policy,
+          expirySeconds: grantExpirySeconds,
         });
 
         persist();
@@ -332,6 +341,7 @@ export function startGatewayServer() {
           granteeAddress: session.granteeAddress,
           subaccountId: session.subaccountId,
           policy: session.policy,
+          expirySeconds: session.grantExpirySeconds,
         });
         const txPlan = buildGrantTxPlan({
           granter: session.ownerInjectiveAddress,
@@ -354,6 +364,22 @@ export function startGatewayServer() {
         const view = gateway.revoke(id);
         persist();
         return send(req, res, 200, { session: view, revoked: true });
+      }
+
+      if (req.method === "GET" && path === "/v1/agent/session") {
+        const token = bearer(req);
+        if (!token?.startsWith("agt_")) {
+          return send(req, res, 401, { error: "agent Bearer agt_… required" });
+        }
+        const summary = gateway.getAgentSessionSummary(token);
+        if (!summary) {
+          return send(req, res, 404, { error: "unknown agent token" });
+        }
+        return send(req, res, 200, {
+          ...summary,
+          executeEnabled: config.executeEnabled,
+          network: config.network,
+        });
       }
 
       if (req.method === "POST" && path === "/v1/propose") {
@@ -399,14 +425,7 @@ export function startGatewayServer() {
         }
         if (!config.executeEnabled) {
           return send(req, res, 503, {
-            error:
-              "execute disabled — set INTENTGUARD_EXECUTE=1 and owner key on sidecar",
-          });
-        }
-        if (!config.ownerPrivateKeyHex) {
-          return send(req, res, 503, {
-            error:
-              "owner signing key missing — INTENTGUARD_OWNER_PRIVATE_KEY_HEX or .intentguard/owner-private-key.hex",
+            error: "execute disabled — operator must enable INTENTGUARD_EXECUTE on gateway",
           });
         }
         const body = (await readBody(req, config.maxBodyBytes)) as {
@@ -419,7 +438,7 @@ export function startGatewayServer() {
           gateway,
           agentApiToken: token,
           intent: body.intent,
-          ownerPrivateKeyHex: config.ownerPrivateKeyHex,
+          ownerPrivateKeyHex: config.ownerPrivateKeyHex ?? null,
           requireOnChainGrant: config.requireOnChainGrant,
           network: config.network,
         });

@@ -24,6 +24,8 @@ export type ExecuteApiResponse = {
   signed: boolean;
   broadcast: boolean;
   reasons?: string[];
+  userHint?: string;
+  errorCode?: string;
   sessionId?: string;
   txHash?: string;
 };
@@ -64,6 +66,8 @@ export function envelopeExecute(
     signed: Boolean(inner.signed),
     broadcast: Boolean(inner.broadcast),
     reasons: (inner.reasons as string[]) ?? undefined,
+    userHint: inner.userHint as string | undefined,
+    errorCode: inner.errorCode as string | undefined,
     sessionId: inner.sessionId as string | undefined,
     txHash: inner.txHash as string | undefined,
   };

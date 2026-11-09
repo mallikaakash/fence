@@ -32,7 +32,7 @@ assert.match(checklist, /gtm:verify/);
 assert.match(checklist, /\/portfolio/);
 
 const startPage = readFileSync(join(root, "web/src/app/start/page.tsx"), "utf8");
-assert.match(startPage, /OnboardingChecklist/);
+assert.match(startPage, /ProtectionWizard/);
 
 const shell = readFileSync(join(root, "web/src/components/layout/app-shell.tsx"), "utf8");
 assert.match(shell, /href="\/start"/);
@@ -41,8 +41,8 @@ const simulator = readFileSync(
   join(root, "web/src/components/intentguard/policy-simulator.tsx"),
   "utf8",
 );
-assert.match(simulator, /useSidecar/);
 assert.match(simulator, /gatewayPropose/);
+assert.match(simulator, /sidecarReady/);
 
 const gettingStarted = readFileSync(join(repoRoot, "docs/GETTING-STARTED.md"), "utf8");
 assert.match(gettingStarted, /Grant Auditor|portfolio/i);

@@ -8,7 +8,6 @@ import {
 } from "@injectivelabs/sdk-ts";
 import {
   BroadcastModeKeplr,
-  CosmosTxV1Beta1TxPb,
   createTransaction,
   getTxRawFromTxRawOrDirectSignResponse,
   TxRestApi,
@@ -18,6 +17,71 @@ import {
   getStdFee,
   toBigNumber,
 } from "@injectivelabs/utils";
+import { encodeTxRawForKeplr } from "@/lib/chain/encode-tx-raw-keplr";
+
+type MsgGrantJson = Parameters<typeof MsgGrant.fromJSON>[0];
+
+function uint8FromWireValue(
+  value: unknown,
+): Uint8Array | undefined {
+  if (value instanceof Uint8Array) return value;
+  if (typeof value === "string") {
+    try {
+      return Uint8Array.from(Buffer.from(value, "base64"));
+    } catch {
+      return undefined;
+    }
+  }
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const entries = Object.entries(value as Record<string, number>);
+    if (entries.length === 0) return undefined;
+    const nums = entries
+      .sort(([a], [b]) => Number(a) - Number(b))
+      .map(([, n]) => n);
+    return Uint8Array.from(nums);
+  }
+  return undefined;
+}
+
+/** Gateway used to emit `toJSON()` protobuf strings; unwrap for `MsgGrant.fromJSON`. */
+export function normalizeMsgGrantWire(raw: unknown): MsgGrantJson {
+  let o: Record<string, unknown> =
+    typeof raw === "string"
+      ? (JSON.parse(raw) as Record<string, unknown>)
+      : (raw as Record<string, unknown>);
+
+  if (o.authorization || o.messageType) {
+    const auth = o.authorization as { typeUrl?: string; value?: unknown } | undefined;
+    if (auth?.value) {
+      const bytes = uint8FromWireValue(auth.value);
+      if (bytes) {
+        o = { ...o, authorization: { ...auth, value: bytes } };
+      }
+    }
+    return o as unknown as MsgGrantJson;
+  }
+
+  const grant = o.grant as Record<string, unknown> | undefined;
+  if (!grant?.authorization) {
+    throw new Error("Grant tx plan entry missing authorization");
+  }
+
+  let expiration = o.expiration ?? grant.expiration;
+  if (expiration && typeof expiration === "object" && "seconds" in expiration) {
+    const sec = (expiration as { seconds: bigint | string | number }).seconds;
+    expiration = typeof sec === "bigint" ? sec.toString() : String(sec);
+  }
+
+  const auth = grant.authorization as { typeUrl: string; value: unknown };
+  const value = uint8FromWireValue(auth.value) ?? auth.value;
+
+  return {
+    granter: String(o.granter),
+    grantee: String(o.grantee),
+    authorization: { typeUrl: auth.typeUrl, value },
+    expiration,
+  } as unknown as MsgGrantJson;
+}
 
 type InjWindow = Window & {
   keplr?: {
@@ -77,7 +141,7 @@ export async function broadcastGrantTxPlan(params: {
   );
 
   const msgs = params.msgGrants.map((raw) =>
-    MsgGrant.fromJSON(raw as Parameters<typeof MsgGrant.fromJSON>[0]),
+    MsgGrant.fromJSON(normalizeMsgGrantWire(raw)),
   );
 
   const { signDoc } = createTransaction({
@@ -100,7 +164,7 @@ export async function broadcastGrantTxPlan(params: {
 
   const broadcastResult = await w.keplr.sendTx(
     chainId,
-    CosmosTxV1Beta1TxPb.TxRaw.encode(txRaw).finish(),
+    encodeTxRawForKeplr(txRaw),
     BroadcastModeKeplr.Sync,
   );
 

@@ -72,6 +72,22 @@ describe("agent HTTP", () => {
     assert.ok(doc.components.schemas.TradeIntent);
   });
 
+  it("GET /v1/agent/session returns budget summary", async () => {
+    const base = `http://127.0.0.1:${port}`;
+    const res = await fetch(`${base}/v1/agent/session`, {
+      headers: { authorization: `Bearer ${agentToken}` },
+    });
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as {
+      dailyMarginBudget: string;
+      dailyMarginRemaining: string;
+      sessionId: string;
+    };
+    assert.equal(body.dailyMarginBudget, "500");
+    assert.equal(body.dailyMarginRemaining, "500");
+    assert.ok(body.sessionId.startsWith("sess_"));
+  });
+
   it("propose returns policy_check envelope", async () => {
     const base = `http://127.0.0.1:${port}`;
     const res = await fetch(`${base}/v1/propose`, {

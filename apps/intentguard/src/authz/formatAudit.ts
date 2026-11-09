@@ -36,12 +36,12 @@ export function formatGrantAuditReport(report: GrantAuditReport): string {
   if (report.score < 70) {
     lines.push("");
     lines.push(
-      "Verdict: Stock-style grants detected — use typed AuthZ + IntentGuard notional policy.",
+      "Verdict: Stock-style grants detected — use typed AuthZ + gateway margin/notional caps (not portfolio exposure tracking).",
     );
   } else if (report.score < 90) {
     lines.push("");
     lines.push(
-      "Verdict: Typed grants help; still add gateway notional/leverage limits.",
+      "Verdict: Typed grants help; add per-order and daily margin limits on the gateway.",
     );
   } else {
     lines.push("");

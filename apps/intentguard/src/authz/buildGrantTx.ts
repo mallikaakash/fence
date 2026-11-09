@@ -40,25 +40,28 @@ export function buildGrantTxPlan(params: {
   const expirationUnix = Math.floor(Date.now() / 1000) + expirySeconds;
   const { subaccountId, marketIds } = params.plan;
 
-  const msgs = [
-    MsgGrant.fromJSON({
+  const msgGrantInputs = [
+    {
       granter: params.granter,
       grantee: params.grantee,
       authorization: packLimit(subaccountId, marketIds),
       expiration: expirationUnix,
-    }),
-    MsgGrant.fromJSON({
+    },
+    {
       granter: params.granter,
       grantee: params.grantee,
       authorization: packCancel(subaccountId, marketIds),
       expiration: expirationUnix,
-    }),
-  ];
+    },
+  ] as const;
+
+  const msgs = msgGrantInputs.map((input) => MsgGrant.fromJSON(input));
 
   return {
     expirationUnix,
     expirationIso: new Date(expirationUnix * 1000).toISOString(),
-    msgGrants: msgs.map((m) => m.toJSON?.() ?? m),
+    /** Flat `MsgGrant.fromJSON` inputs — not `toJSON()` strings (breaks Keplr broadcast). */
+    msgGrants: [...msgGrantInputs],
     spikeCliHint:
       "Or funded testnet owner: npm run grant:broadcast -- /tmp/ig-session.json",
   };

@@ -5,10 +5,9 @@ export function RiskDisclosure({ compact = false }: { compact?: boolean }) {
   if (compact) {
     return (
       <p className="text-white/45 text-xs max-w-2xl leading-relaxed">
-        IntentGuard is operator-run software, not custody or a warranty. Sidecar integrity, on-chain
-        grants, and key custody are your responsibility.{" "}
+        Testnet product. You control your Keplr wallet and on-chain approvals.{" "}
         <Link href="/limitations" className="text-[#75bfcf] underline">
-          Limitations
+          How it works
         </Link>
       </p>
     );

@@ -1,4 +1,4 @@
-import { PrivateKey, getSubaccountId } from "@injectivelabs/sdk-ts";
+import { getEthereumAddress, PrivateKey, getSubaccountId } from "@injectivelabs/sdk-ts";
 import type { IntentGuardGateway } from "../gateway/session.ts";
 import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
 import type { TradeIntent } from "../policy/types.ts";
@@ -26,11 +26,55 @@ function walletFromHex(
   };
 }
 
+function resolveOwnerWallet(
+  session: {
+    ownerInjectiveAddress?: string;
+    subaccountId?: string;
+    subaccountIndex?: number;
+  },
+  subaccountId: string,
+  subIndex: number,
+  ownerPrivateKeyHex?: string | null,
+): SpikeWallet | { error: string } {
+  if (session.ownerInjectiveAddress && session.subaccountId) {
+    if (ownerPrivateKeyHex) {
+      const fromKey = walletFromHex(
+        "owner",
+        ownerPrivateKeyHex,
+        subaccountId,
+        subIndex,
+      );
+      if (fromKey.injectiveAddress !== session.ownerInjectiveAddress) {
+        return { error: "configured owner key does not match session owner address" };
+      }
+      return fromKey;
+    }
+    let ethereumAddress = "";
+    try {
+      ethereumAddress = getEthereumAddress(session.ownerInjectiveAddress);
+    } catch {
+      ethereumAddress = "";
+    }
+    return {
+      role: "owner",
+      injectiveAddress: session.ownerInjectiveAddress,
+      ethereumAddress,
+      subaccountId: session.subaccountId,
+      subaccountIndex: subIndex,
+      privateKeyHex: "",
+    };
+  }
+  if (!ownerPrivateKeyHex) {
+    return { error: "session missing ownerInjectiveAddress — create session with Keplr owner" };
+  }
+  return walletFromHex("owner", ownerPrivateKeyHex, subaccountId, subIndex);
+}
+
 export async function executeAgentIntent(params: {
   gateway: IntentGuardGateway;
   agentApiToken: string;
   intent: TradeIntent;
-  ownerPrivateKeyHex: string;
+  ownerPrivateKeyHex?: string | null;
   requireOnChainGrant?: boolean;
   network?: "testnet" | "mainnet";
 }): Promise<
@@ -61,32 +105,34 @@ export async function executeAgentIntent(params: {
   }
 
   const subIndex = session.subaccountIndex ?? TRADING_SUBACCOUNT_INDEX;
-  const ownerAddr =
-    session.ownerInjectiveAddress ??
-    walletFromHex(
-      "owner",
-      params.ownerPrivateKeyHex,
-      "0x0",
-      subIndex,
-    ).injectiveAddress;
   const subaccountId =
-    session.subaccountId ?? getSubaccountId(ownerAddr, subIndex);
+    session.subaccountId ??
+    (session.ownerInjectiveAddress
+      ? getSubaccountId(session.ownerInjectiveAddress, subIndex)
+      : params.ownerPrivateKeyHex
+        ? getSubaccountId(
+            walletFromHex("owner", params.ownerPrivateKeyHex, "0x0", subIndex)
+              .injectiveAddress,
+            subIndex,
+          )
+        : "0x0");
 
-  const owner = walletFromHex(
-    "owner",
-    params.ownerPrivateKeyHex,
+  const ownerResolved = resolveOwnerWallet(
+    session,
     subaccountId,
     subIndex,
+    params.ownerPrivateKeyHex,
   );
-  if (session.ownerInjectiveAddress && owner.injectiveAddress !== session.ownerInjectiveAddress) {
+  if ("error" in ownerResolved) {
     return {
       status: "denied",
       stage: "approval",
-      reasons: ["configured owner key does not match session owner address"],
+      reasons: [ownerResolved.error],
       signed: false,
       broadcast: false,
     };
   }
+  const owner = ownerResolved;
 
   const grantee = walletFromHex(
     "grantee",
@@ -132,6 +178,8 @@ export async function executeAgentIntent(params: {
     granteeAddress: session.granteeAddress,
     privateKeyHex: session.granteePrivateKeyHex,
   });
+
+  params.gateway.touchSessionBudget(session);
 
   const result = await proposeAndExecLimitOrder({
     agent: { role: "agent", apiToken: params.agentApiToken },

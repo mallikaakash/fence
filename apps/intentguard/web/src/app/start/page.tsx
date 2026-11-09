@@ -1,31 +1,34 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
-import { HostedStartNote } from "@/components/intentguard/hosted-start-note";
-import { OnboardingChecklist } from "@/components/intentguard/onboarding-checklist";
+import { InnerPage } from "@/components/layout/inner-page";
+import { ProtectionWizard } from "@/components/intentguard/protection-wizard";
+import { ProtectionStatusBanner } from "@/components/intentguard/protection-status-banner";
+import { PolicyCapsCallout } from "@/components/intentguard/policy-caps-callout";
 
 export default function StartPage() {
   return (
     <AppShell>
-      <section className="max-w-3xl mx-auto px-6 pt-32 pb-24 space-y-6">
-        <h1 className="text-3xl font-light text-orange-400">Get started</h1>
-        <HostedStartNote />
-        <OnboardingChecklist />
-        <p className="text-white/50 text-xs">
-          Docs:{" "}
-          <a
-            className="text-[#75bfcf] underline"
-            href="https://github.com/mallikaakash/injective-buildathon/blob/main/docs/GETTING-STARTED.md"
-            target="_blank"
-            rel="noreferrer"
-          >
-            GETTING-STARTED
-          </a>
-          {" · "}
-          <Link href="/portfolio" className="text-[#75bfcf] underline">
-            Free grant audit
-          </Link>
-        </p>
-      </section>
+      <InnerPage
+        title="Protect your trading"
+        subtitle="Connect Keplr on Injective testnet, set limits, and sign one timed grant. About three minutes."
+      >
+        <div className="space-y-5">
+          <ProtectionStatusBanner />
+          <PolicyCapsCallout />
+          <ProtectionWizard />
+          <p className="text-white/40 text-xs">
+            Already set up?{" "}
+            <Link href="/trade" className="text-[#75bfcf] underline">
+              Try your limits
+            </Link>{" "}
+            or{" "}
+            <Link href="/agent" className="text-[#75bfcf] underline">
+              run the demo agent
+            </Link>
+            .
+          </p>
+        </div>
+      </InnerPage>
     </AppShell>
   );
 }

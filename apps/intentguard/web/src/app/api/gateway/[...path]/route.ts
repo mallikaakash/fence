@@ -26,8 +26,13 @@ async function proxy(req: NextRequest, pathSegs: string[]) {
 
   const headers = new Headers();
   const clientAuth = req.headers.get("authorization");
-  if (clientAuth?.startsWith("agt_")) {
-    headers.set("authorization", clientAuth);
+  const bearerToken = clientAuth?.startsWith("Bearer ")
+    ? clientAuth.slice(7).trim()
+    : clientAuth?.trim();
+  if (bearerToken?.startsWith("agt_")) {
+    headers.set("authorization", `Bearer ${bearerToken}`);
+  } else if (bearerToken?.startsWith("own_")) {
+    headers.set("authorization", `Bearer ${bearerToken}`);
   } else if (OWNER_KEY) {
     headers.set("authorization", `Bearer ${OWNER_KEY}`);
   }

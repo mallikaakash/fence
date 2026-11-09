@@ -1,114 +1,114 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { HomeHeroIntro } from "@/components/intentguard/home-hero";
-import { RiskDisclosure } from "@/components/intentguard/risk-disclosure";
+import { HeroStagger } from "@/components/motion/hero-stagger";
+import { MotionReveal } from "@/components/motion/motion-reveal";
 
 export default function Home() {
   return (
     <AppShell>
-      <section className="hero-section flex flex-col items-center justify-center p-8 min-h-screen">
-        <div className="flex flex-col items-start justify-center w-full md:ml-[20%] ml-[5%] space-y-6">
-          <div>
-            <p className="mb-5">
-              <span className="inline-flex items-center px-2 py-1 text-[0.65rem] tracking-[0.35em] uppercase text-white/80 bg-white/10 rounded-full border border-white/20">
-                Injective · AI agent execution policy
-              </span>
-            </p>
-            <h1 className="md:text-5xl text-3xl font-sans font-thin uppercase text-left mb-4 inline-block">
-              <span className="bg-orange-400 px-2 rounded-md text-black shadow-md">
-                IntentGuard
-              </span>
-            </h1>
-            <HomeHeroIntro />
-            <RiskDisclosure compact />
-          </div>
+      <section className="hero-section flex flex-col justify-center min-h-screen px-[5%] md:pl-[20%] md:pr-[10%] py-16">
+        <HeroStagger>
+          <div className="flex flex-col items-start justify-center max-w-5xl space-y-6">
+            <div className="hero-stagger__item">
+              <p className="mb-5">
+                <span className="motion-pill inline-flex items-center px-2 py-1 text-[0.65rem] tracking-[0.35em] uppercase text-white/80 bg-white/10 rounded-full border border-white/20">
+                  IntentGuard · Injective testnet
+                </span>
+              </p>
+              <h1 className="md:text-5xl text-3xl font-sans font-thin uppercase text-left mb-4 inline-block">
+                <span className="motion-title-chip bg-orange-400 px-2 rounded-md text-black shadow-md">
+                  IntentGuard
+                </span>
+              </h1>
+              <HomeHeroIntro />
+            </div>
 
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href="/start"
-                className="inline-flex items-center px-4 py-2 bg-white text-black rounded-md font-medium hover:bg-white/90 transition-colors"
-              >
-                Get started
-              </Link>
-              <Link
-                href="/trade"
-                className="inline-flex items-center px-4 py-2 bg-[#75bfcf] text-black rounded-md font-medium hover:bg-[#75bfcf]/80 transition-colors"
-              >
-                Policy simulator
-              </Link>
-              <Link
-                href="/history"
-                className="inline-flex items-center px-4 py-2 border border-white/30 text-white rounded-md font-medium hover:bg-white/10 transition-colors"
-              >
-                Evidence & activity
-              </Link>
-            </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <Link
-                href="/console"
-                className="inline-flex items-center px-4 py-2 bg-orange-400/90 text-black rounded-md font-medium hover:bg-orange-400 transition-colors"
-              >
-                Owner console
-              </Link>
-              <Link
-                href="/portfolio"
-                className="inline-flex items-center px-4 py-2 border border-white/30 text-white rounded-md font-medium hover:bg-white/10 transition-colors"
-              >
-                Grant auditor
-              </Link>
-              <a
-                href="https://github.com/mallikaakash/injective-buildathon/blob/main/docs/PRICING.md"
-                className="text-sm text-white/60 underline hover:text-white"
-                target="_blank"
-                rel="noreferrer"
-              >
-                Pricing & tiers
-              </a>
-              <span className="group relative text-black inline-flex items-center px-2 py-1 bg-[#75bfcf] md:text-sm text-xs rounded-md shadow">
-                Powered by Injective typed AuthZ
-              </span>
+            <div className="hero-stagger__item flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-4">
+                <Link href="/start" className="cta-primary motion-cta">
+                  Protect my wallet
+                </Link>
+                <Link href="/trade" className="cta-secondary motion-cta">
+                  Try your limits
+                </Link>
+                <Link href="/agent" className="cta-secondary motion-cta">
+                  Demo agent
+                </Link>
+              </div>
+              <div className="flex flex-wrap items-center gap-4">
+                <Link href="/portfolio" className="cta-secondary motion-cta">
+                  Grant audit
+                </Link>
+                <span className="motion-badge inline-flex items-center px-2 py-1 bg-[#75bfcf] md:text-sm text-xs text-black rounded-md shadow">
+                  Powered by Injective typed AuthZ
+                </span>
+              </div>
             </div>
           </div>
-        </div>
+        </HeroStagger>
       </section>
 
-      <section className="features-section flex flex-col items-center p-8 min-h-screen">
-        <div className="flex flex-col items-start mt-[10%] w-full ml-[5%] md:ml-[20%]">
-          <h2 className="text-3xl font-sans font-thin uppercase text-left mb-8 inline-block">
-            <span className="bg-orange-400 px-2 text-black">Why IntentGuard</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-5xl">
+      <section className="features-section flex flex-col min-h-screen px-[5%] md:pl-[20%] md:pr-[10%] py-16">
+        <div className="flex flex-col items-start max-w-5xl mt-[6%] md:mt-[10%]">
+          <MotionReveal>
+            <h2 className="text-3xl font-sans font-thin uppercase text-left mb-8 inline-block">
+              <span className="motion-title-chip bg-orange-400 px-2 text-black">Why this is different</span>
+            </h2>
+          </MotionReveal>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
             <FeatureCard
-              title="Typed AuthZ"
-              body="Market IDs and subaccount scoped on-chain — not stock GenericAuthorization."
+              delayMs={0}
+              title="Hard caps"
+              body="Max order size, daily margin, and allowed markets — enforced before trades hit the exchange."
             />
             <FeatureCard
-              title="Isolated signer"
-              body="Grantee key stays in the gateway; the agent never sees MsgExec signing material."
+              delayMs={90}
+              title="Keplr in control"
+              body="You approve typed AuthZ and can revoke anytime. We never see your seed phrase."
             />
             <FeatureCard
-              title="Notional gate"
-              body="Gateway enforces price × quantity before MsgExec — not a native AuthZ field on Injective."
+              delayMs={180}
+              title="Demo agent"
+              body="See allow/deny decisions with plain phrases — same policy engine as a real bot."
             />
             <FeatureCard
-              title="Kill switch"
-              body="Owner MsgRevoke on-chain; gateway clears grantee key. Residual trust assumptions apply."
+              delayMs={270}
+              title="Grant audit"
+              body="Free scan for risky generic AuthZ on your wallet before you connect AI tools."
             />
           </div>
+          <MotionReveal delayMs={120}>
+            <p className="text-white/50 text-sm mt-8 max-w-2xl">
+              Notional limits are gateway-enforced, not inside every Injective contract.{" "}
+              <Link href="/limitations" className="text-[#75bfcf] underline">
+                Limits &amp; trust
+              </Link>
+            </p>
+          </MotionReveal>
         </div>
       </section>
     </AppShell>
   );
 }
 
-function FeatureCard({ title, body }: { title: string; body: string }) {
+function FeatureCard({
+  title,
+  body,
+  delayMs,
+}: {
+  title: string;
+  body: string;
+  delayMs: number;
+}) {
   return (
-    <div className="backdrop-blur-md bg-white/10 border border-white/25 rounded-2xl shadow-2xl p-6 transition-all duration-300 hover:bg-white/20">
-      <h3 className="text-xl font-bold mb-3">
-        <span className="bg-[#75bfcf] px-2 text-black">{title}</span>
-      </h3>
-      <p className="text-white/80 leading-relaxed">{body}</p>
-    </div>
+    <MotionReveal delayMs={delayMs}>
+      <div className="motion-card glass-card p-6 rounded-2xl">
+        <h3 className="text-xl font-bold mb-3">
+          <span className="bg-[#75bfcf] px-2 text-black">{title}</span>
+        </h3>
+        <p className="text-white/80 leading-relaxed">{body}</p>
+      </div>
+    </MotionReveal>
   );
 }

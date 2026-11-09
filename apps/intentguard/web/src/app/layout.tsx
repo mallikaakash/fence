@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IntentGuard",
+  title: "IntentGuard · Injective testnet",
   description:
-    "Typed AuthZ + isolated signer + order economics for AI agents on Injective",
+    "Set trading limits for AI on Injective testnet — typed AuthZ, policy checks, and optional live execution.",
 };
 
 export default function RootLayout({

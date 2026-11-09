@@ -8,7 +8,6 @@ import {
 } from "@injectivelabs/sdk-ts";
 import {
   BroadcastModeKeplr,
-  CosmosTxV1Beta1TxPb,
   createTransaction,
   getTxRawFromTxRawOrDirectSignResponse,
   TxRestApi,
@@ -18,6 +17,7 @@ import {
   getStdFee,
   toBigNumber,
 } from "@injectivelabs/utils";
+import { encodeTxRawForKeplr } from "@/lib/chain/encode-tx-raw-keplr";
 
 const DEFAULT_REVOKE_TYPES = [
   "/injective.exchange.v1beta1.MsgCreateDerivativeLimitOrder",
@@ -97,7 +97,7 @@ export async function broadcastTypedRevokes(params: {
 
     const broadcastResult = await w.keplr.sendTx(
       chainId,
-      CosmosTxV1Beta1TxPb.TxRaw.encode(txRaw).finish(),
+      encodeTxRawForKeplr(txRaw),
       BroadcastModeKeplr.Sync,
     );
     if (!broadcastResult?.length) {

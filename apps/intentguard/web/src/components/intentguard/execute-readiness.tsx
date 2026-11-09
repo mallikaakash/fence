@@ -38,19 +38,8 @@ export function ExecuteReadinessPanel() {
         </li>
         <li>Owner typed MsgGrant on-chain (console → Check grant)</li>
         <li>Funded subaccount margin on exchange</li>
-        <li>
-          Owner signing key on{" "}
-          <strong className="text-white/80">gateway only</strong> — Secret Manager on GCP,
-          never in browser
-        </li>
+        <li>Hosted live trading uses your session keys — no export to the browser</li>
       </ul>
-      {!executeReady && (
-        <p className="text-white/50 pt-1">
-          Ops: <code className="text-white/70">scripts/enable-gcp-execute.sh</code> after you
-          add <code className="text-white/70">intentguard-owner-private-key</code> in Secret
-          Manager.
-        </p>
-      )}
     </div>
   );
 }

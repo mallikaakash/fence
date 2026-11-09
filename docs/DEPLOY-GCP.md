@@ -73,6 +73,8 @@ chmod +x scripts/enable-gcp-execute.sh
 
 Console **Execute readiness** panel shows whether execute is enabled.
 
+Full owner checklist (grantee gas, subaccount margin, first live order): [GO-LIVE-TESTNET.md](./GO-LIVE-TESTNET.md).
+
 ## Execute on-chain (manual env)
 
 Same as local: fund wallets, typed MsgGrant, then set on the **gateway** service only:

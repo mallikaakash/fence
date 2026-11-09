@@ -21,6 +21,13 @@ export async function gatewayHealth(settings: GatewaySettings) {
   return gwFetch(settings, "/health", { method: "GET" });
 }
 
+export async function gatewayAgentSession(settings: GatewaySettings) {
+  return gwFetch(settings, "/v1/agent/session", {
+    method: "GET",
+    useAgent: true,
+  });
+}
+
 export async function gatewayListSessions(settings: GatewaySettings) {
   return gwFetch(settings, "/v1/sessions", { method: "GET" });
 }
@@ -71,6 +78,18 @@ export async function gatewayPropose(
   intent: unknown,
 ) {
   return gwFetch(settings, "/v1/propose", {
+    method: "POST",
+    body: JSON.stringify({ intent }),
+    useAgent: true,
+  });
+}
+
+/** Policy + MsgExec broadcast (requires gateway INTENTGUARD_EXECUTE=1 + owner hex on sidecar). */
+export async function gatewayExecute(
+  settings: GatewaySettings,
+  intent: unknown,
+) {
+  return gwFetch(settings, "/v1/execute", {
     method: "POST",
     body: JSON.stringify({ intent }),
     useAgent: true,
