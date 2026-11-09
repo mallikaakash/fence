@@ -11,6 +11,7 @@ describe("gateway HTTP", () => {
   let port: number;
   let ownerKey: string;
   let dataDir: string;
+  let stop: () => Promise<void>;
 
   before(async () => {
     dataDir = mkdtempSync(join(tmpdir(), "igw-"));
@@ -20,6 +21,7 @@ describe("gateway HTTP", () => {
     process.env.INTENTGUARD_BIND = "127.0.0.1";
     const started = startGatewayServer();
     server = started.server;
+    stop = started.shutdown;
     ownerKey = started.config.ownerApiKey;
     await new Promise<void>((resolve, reject) => {
       server.once("listening", () => resolve());
@@ -30,8 +32,8 @@ describe("gateway HTTP", () => {
     port = addr.port;
   });
 
-  after(() => {
-    server.close();
+  after(async () => {
+    await stop();
     rmSync(dataDir, { recursive: true, force: true });
     delete process.env.INTENTGUARD_DATA_DIR;
     delete process.env.INTENTGUARD_OWNER_API_KEY;

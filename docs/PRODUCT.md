@@ -98,7 +98,7 @@ Route A sidecar + typed grants + notional policy is the product core.
 ```bash
 cd apps/intentguard
 npm run check && npm test
-npm run product:smoke && npm run security:verify && npm run e2e:protocol && npm run gtm:verify
+npm run product:smoke && npm run security:verify && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify
 npm run web:build
 ```
 

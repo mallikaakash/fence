@@ -77,6 +77,8 @@ docker compose up -d --build
 
 Mount persists at volume `intentguard-data`. Set `INTENTGUARD_OWNER_API_KEY` in `docker compose` env or `.env` for reproducible ops.
 
+Compose uses `GET /health/ready` for health checks. Ops runbook: [SRE.md](./SRE.md).
+
 ## Option C — Web UI
 
 **Important:** The owner console talks to **your** gateway over HTTP. It works when you run **both** on the same machine (`npm run gateway` + `npm run web:dev`). The hosted Vercel site cannot reach `127.0.0.1` on your laptop — use local web for console ops.

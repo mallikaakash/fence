@@ -53,4 +53,9 @@ const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8")) as {
 };
 assert.ok(pkg.scripts["gtm:verify"], "package.json must define gtm:verify");
 
+const srePath = join(repoRoot, "docs/SRE.md");
+assert.ok(existsSync(srePath), "missing SRE.md");
+const pkgScripts = pkg.scripts;
+assert.ok(pkgScripts["platform:verify"], "package.json must define platform:verify");
+
 console.log("OK gtm-verify:", required.length, "artifacts + nav/simulator/onboarding strings");

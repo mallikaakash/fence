@@ -15,7 +15,7 @@ EXPOSE 8787
 VOLUME ["/data"]
 ENV INTENTGUARD_DATA_DIR=/data/.intentguard
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=5s \
-  CMD node -e "fetch('http://127.0.0.1:8787/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s \
+  CMD node -e "fetch('http://127.0.0.1:8787/health/ready').then(r=>r.json()).then(j=>process.exit(j.ok?0:1)).catch(()=>process.exit(1))"
 
 CMD ["node", "--experimental-strip-types", "src/server/main.ts"]

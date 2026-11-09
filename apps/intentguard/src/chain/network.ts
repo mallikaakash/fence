@@ -6,6 +6,16 @@ import {
   PrivateKey,
 } from "@injectivelabs/sdk-ts";
 
+export function networkFromEnv(
+  network: "testnet" | "mainnet",
+): Network {
+  return network === "mainnet" ? Network.MainnetSentry : Network.TestnetSentry;
+}
+
+export function lcdRestBaseUrl(network: "testnet" | "mainnet"): string {
+  return getNetworkEndpoints(networkFromEnv(network)).rest;
+}
+
 /** Always testnet for IntentGuard spike unless explicitly overridden. */
 export function spikeNetwork(): Network {
   const n = (process.env.INJECTIVE_NETWORK ?? "testnet").toLowerCase();

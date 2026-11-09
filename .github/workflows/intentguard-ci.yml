@@ -1,0 +1,83 @@
+name: IntentGuard CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/intentguard/**"
+      - "docs/SRE.md"
+      - ".github/workflows/intentguard-ci.yml"
+  pull_request:
+    paths:
+      - "apps/intentguard/**"
+      - "docs/SRE.md"
+      - ".github/workflows/intentguard-ci.yml"
+
+defaults:
+  run:
+    working-directory: apps/intentguard
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/intentguard/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run check
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Product smoke
+        run: npm run product:smoke
+
+      - name: Security verify
+        run: npm run security:verify
+
+      - name: Protocol E2E (offline + live LCD)
+        run: npm run e2e:protocol
+        env:
+          INTENTGUARD_E2E_LIVE: "1"
+
+      - name: GTM verify
+        run: npm run gtm:verify
+
+      - name: Platform verify
+        run: npm run platform:verify
+
+      - name: Web production build
+        run: npm run web:build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Docker build
+        run: docker build -t intentguard:ci .
+        working-directory: apps/intentguard
+
+      - name: Docker health smoke
+        run: |
+          cid=$(docker run -d -e DOCKER=1 -e INTENTGUARD_OWNER_API_KEY=own_ci -p 8787:8787 intentguard:ci)
+          trap "docker rm -f $cid" EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:8787/health/ready | grep -q '"ok":true'; then
+              echo OK docker ready
+              exit 0
+            fi
+            sleep 1
+          done
+          docker logs "$cid"
+          exit 1

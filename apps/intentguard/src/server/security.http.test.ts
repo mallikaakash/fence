@@ -11,6 +11,7 @@ describe("gateway security", () => {
   let server: Server;
   let port: number;
   let dataDir: string;
+  let stop: () => Promise<void>;
 
   before(async () => {
     dataDir = mkdtempSync(join(tmpdir(), "ig-sec-http-"));
@@ -21,14 +22,15 @@ describe("gateway security", () => {
     process.env.INTENTGUARD_BIND = "127.0.0.1";
     const started = startGatewayServer();
     server = started.server;
+    stop = started.shutdown;
     await new Promise<void>((r) => server.once("listening", () => r()));
     const addr = server.address();
     assert.ok(addr && typeof addr === "object");
     port = addr.port;
   });
 
-  after(() => {
-    server.close();
+  after(async () => {
+    await stop();
     rmSync(dataDir, { recursive: true, force: true });
     delete process.env.INTENTGUARD_DATA_DIR;
     delete process.env.INTENTGUARD_OWNER_API_KEY;

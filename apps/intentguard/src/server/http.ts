@@ -1,4 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { existsSync } from "node:fs";
 import { PrivateKey, getSubaccountId } from "@injectivelabs/sdk-ts";
 import { IntentGuardGateway } from "../gateway/session.ts";
 import type { IntentGuardPolicy, TradeIntent } from "../policy/types.ts";
@@ -14,6 +16,9 @@ import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
 import { buildGrantTxPlan } from "../authz/buildGrantTx.ts";
 import { safeEqual } from "./auth.ts";
 import { RateLimiter } from "./rateLimit.ts";
+import { INTENTGUARD_VERSION } from "./version.ts";
+import { logJson } from "./log.ts";
+import { lcdRestBaseUrl } from "../chain/network.ts";
 
 type Json = Record<string, unknown>;
 
@@ -54,6 +59,7 @@ function sendJson(
   config: GatewayConfig,
   status: number,
   body: Json,
+  requestId?: string,
 ) {
   const headers: Record<string, string> = {
     "content-type": "application/json",
@@ -62,6 +68,7 @@ function sendJson(
     "access-control-allow-headers": "authorization, content-type",
     "access-control-allow-methods": "GET, POST, OPTIONS",
   };
+  if (requestId) headers["x-request-id"] = requestId;
   const origin = req.headers.origin;
   if (origin && config.corsOrigins.includes(origin)) {
     headers["access-control-allow-origin"] = origin;
@@ -87,15 +94,15 @@ export function startGatewayServer() {
     maxRequests: config.rateLimitPerMinute,
   });
 
-  const send = (
-    req: IncomingMessage,
-    res: ServerResponse,
-    status: number,
-    body: Json,
-  ) => sendJson(req, res, config, status, body);
+  let shuttingDown = false;
+  let inFlight = 0;
+  let persistQueue = Promise.resolve();
 
-  function persist() {
-    store.save(gateway.exportSessions(), gateway.audit.list());
+  function persist(): Promise<void> {
+    persistQueue = persistQueue.then(() => {
+      store.save(gateway.exportSessions(), gateway.audit.list());
+    });
+    return persistQueue;
   }
 
   function hydrate() {
@@ -106,13 +113,46 @@ export function startGatewayServer() {
 
   hydrate();
 
+  logJson("info", "startup", {
+    version: INTENTGUARD_VERSION,
+    bindHost: config.bindHost,
+    port: config.port,
+    dataDir: config.dataDir,
+    network: config.network,
+  });
+
   const server = createServer(async (req, res) => {
+    const started = Date.now();
+    const requestId =
+      (req.headers["x-request-id"] as string | undefined) ?? randomUUID();
+    const send = (
+      r: IncomingMessage,
+      res: ServerResponse,
+      status: number,
+      body: Json,
+    ) => sendJson(r, res, config, status, body, requestId);
+
+    if (shuttingDown) {
+      send(req, res, 503, { error: "shutting down" });
+      logJson("info", "request", {
+        requestId,
+        method: req.method,
+        path: req.url?.split("?")[0] ?? "",
+        status: 503,
+        durationMs: Date.now() - started,
+      });
+      return;
+    }
+
+    inFlight++;
+    let path = "";
+    try {
     if (!req.url || !req.method) return send(req, res, 400, { error: "bad request" });
 
     if (req.method === "OPTIONS") return send(req, res, 204, {});
 
     const url = new URL(req.url, `http://${req.headers.host ?? "localhost"}`);
-    const path = url.pathname;
+    path = url.pathname;
     const clientIp = req.socket.remoteAddress ?? "unknown";
     const rateKey = `${clientIp}:${path.split("/").slice(0, 3).join("/")}`;
     const retry = limiter.check(rateKey);
@@ -123,17 +163,49 @@ export function startGatewayServer() {
       });
     }
 
-    try {
       if (req.method === "GET" && path === "/health") {
         return send(req, res, 200, {
           ok: true,
           service: "intentguard-gateway",
-          version: "0.1.4",
+          version: INTENTGUARD_VERSION,
           executeEnabled: config.executeEnabled,
           network: config.network,
           requireOnChainGrant: config.requireOnChainGrant,
           encryptionAtRest: Boolean(config.dataKey),
           sessions: gateway.exportSessions().length,
+          requestId,
+        });
+      }
+
+      if (req.method === "GET" && path === "/health/live") {
+        return send(req, res, 200, {
+          ok: !shuttingDown,
+          service: "intentguard-gateway",
+        });
+      }
+
+      if (req.method === "GET" && path === "/health/ready") {
+        const dataDirOk = existsSync(config.dataDir);
+        let lcdOk = true;
+        if (process.env.INTENTGUARD_READY_LCD === "1") {
+          const lcdRest = lcdRestBaseUrl(config.network);
+          try {
+            const probe = await fetch(`${lcdRest}/cosmos/base/tendermint/v1beta1/blocks/latest`, {
+              signal: AbortSignal.timeout(5_000),
+            });
+            lcdOk = probe.ok;
+          } catch {
+            lcdOk = false;
+          }
+        }
+        const ready = dataDirOk && lcdOk && !shuttingDown;
+        return send(req, res, ready ? 200 : 503, {
+          ok: ready,
+          dataDir: config.dataDir,
+          dataDirWritable: dataDirOk,
+          lcdReachable: lcdOk,
+          sessions: gateway.exportSessions().length,
+          encryptionAtRest: Boolean(config.dataKey),
         });
       }
 
@@ -142,7 +214,9 @@ export function startGatewayServer() {
           openapi: "3.0.0",
           info: { title: "IntentGuard Gateway", version: "0.1.0" },
           paths: {
-            "/health": { get: { summary: "Liveness" } },
+            "/health": { get: { summary: "Service health" } },
+            "/health/live": { get: { summary: "Liveness probe" } },
+            "/health/ready": { get: { summary: "Readiness probe" } },
             "/v1/sessions": { post: { summary: "Create session (owner)" } },
             "/v1/sessions/{id}": { get: { summary: "Get session (owner)" } },
             "/v1/sessions/{id}/grant-status": {
@@ -414,11 +488,39 @@ export function startGatewayServer() {
       if (err instanceof HttpError) {
         return send(req, res, err.status, { error: err.message });
       }
+      logJson("error", "request_error", {
+        requestId,
+        path,
+        error: err instanceof Error ? err.message : String(err),
+      });
       return send(req, res, 500, {
         error: err instanceof Error ? err.message : String(err),
       });
+    } finally {
+      inFlight--;
+      logJson("info", "request", {
+        requestId,
+        method: req.method,
+        path,
+        status: res.statusCode,
+        durationMs: Date.now() - started,
+      });
     }
   });
+
+  async function shutdown(): Promise<void> {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    logJson("info", "shutdown", { inFlight });
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+    const deadline = Date.now() + 30_000;
+    while (inFlight > 0 && Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 50));
+    }
+    await persistQueue;
+    store.save(gateway.exportSessions(), gateway.audit.list());
+    logJson("info", "shutdown_complete", {});
+  }
 
   server.listen(config.port, config.bindHost, () => {
     console.log(
@@ -428,5 +530,5 @@ export function startGatewayServer() {
     console.log(`OpenAPI: http://127.0.0.1:${config.port}/v1/openapi.json`);
   });
 
-  return { server, config, gateway, persist };
+  return { server, config, gateway, persist, shutdown };
 }
