@@ -50,7 +50,7 @@ const steps = [
   {
     title: "Verify release",
     body: "CI-style smoke before mainnet",
-    copy: "npm run product:smoke && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify",
+    copy: "npm run product:smoke && npm run e2e:protocol && npm run gtm:verify && npm run platform:verify && npm run ux:verify",
     cta: "Copy verify",
   },
 ];

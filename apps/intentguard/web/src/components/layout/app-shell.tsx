@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { EnvironmentRibbon } from "@/components/intentguard/gateway-ux";
 
 type Props = {
   children: React.ReactNode;
@@ -7,7 +8,8 @@ type Props = {
 export function AppShell({ children }: Props) {
   return (
     <div>
-      <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6">
+      <EnvironmentRibbon />
+      <nav className="fixed top-8 left-1/2 -translate-x-1/2 z-50 px-6 max-md:top-14">
         <div className="backdrop-blur-sm bg-white/5 border border-white/10 rounded-full shadow-2xl px-10 py-4">
           <div className="relative flex items-center justify-center space-x-10">
             <Link

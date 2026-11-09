@@ -1,7 +1,7 @@
 {
   "name": "@injective-buildathon/intentguard",
   "private": true,
-  "version": "0.1.6",
+  "version": "0.1.7",
   "type": "module",
   "scripts": {
     "test": "node --experimental-strip-types --test src/**/*.test.ts src/**/**/*.test.ts",
@@ -17,6 +17,7 @@
     "e2e:protocol": "node --experimental-strip-types src/cli/e2e-protocol.ts",
     "gtm:verify": "node --experimental-strip-types src/cli/gtm-verify.ts",
     "platform:verify": "node --experimental-strip-types src/cli/platform-verify.ts",
+    "ux:verify": "node --experimental-strip-types src/cli/ux-verify.ts",
     "grant:broadcast": "node --experimental-strip-types src/cli/grant-broadcast.ts",
     "web:dev": "npm run dev --prefix web",
     "web:build": "npm run build --prefix web",

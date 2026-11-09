@@ -13,10 +13,18 @@ import {
   gatewayRevokeSession,
 } from "@/lib/gateway/client";
 import {
+  clearGatewaySettings,
   loadGatewaySettings,
   saveGatewaySettings,
   type GatewaySettings,
 } from "@/lib/gateway/storage";
+import type { GatewayHealthJson } from "@/lib/gateway/health-types";
+import {
+  GatewayConnectionWarnings,
+  GatewayNetworkChip,
+  GatewaySecretsPanel,
+  GrantTxPlanPanel,
+} from "@/components/intentguard/gateway-ux";
 
 type SessionView = {
   sessionId: string;
@@ -72,6 +80,7 @@ export function OwnerConsole() {
     agentApiToken: "",
   });
   const [health, setHealth] = useState<string | null>(null);
+  const [healthInfo, setHealthInfo] = useState<GatewayHealthJson | null>(null);
   const [sessions, setSessions] = useState<SessionView[]>([]);
   const [events, setEvents] = useState<unknown[]>([]);
   const [busy, setBusy] = useState(false);
@@ -88,6 +97,30 @@ export function OwnerConsole() {
     setSettings(loadGatewaySettings());
   }, []);
 
+  useEffect(() => {
+    const s = loadGatewaySettings();
+    if (!s.baseUrl) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const { res, json } = await gatewayHealth(s);
+        if (cancelled) return;
+        const h = json as GatewayHealthJson;
+        if (res.ok) {
+          setHealthInfo(h);
+          setHealth(
+            `OK v${h.version ?? "?"} · ${h.network ?? "?"} · execute=${h.executeEnabled ? "on" : "off"}`,
+          );
+        }
+      } catch {
+        if (!cancelled) setHealthInfo(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.baseUrl, settings.ownerApiKey]);
+
   const persist = useCallback((next: Partial<GatewaySettings>) => {
     setSettings((prev) => {
       const merged = { ...prev, ...next };
@@ -101,12 +134,18 @@ export function OwnerConsole() {
     setHealth(null);
     try {
       const { res, json } = await gatewayHealth(settings);
-      setHealth(
-        res.ok
-          ? `OK v${(json as { version?: string }).version ?? "?"} execute=${(json as { executeEnabled?: boolean }).executeEnabled}`
-          : `Error ${res.status}`,
-      );
+      const h = json as GatewayHealthJson;
+      if (res.ok) {
+        setHealthInfo(h);
+        setHealth(
+          `OK v${h.version ?? "?"} · ${h.network ?? "network?"} · execute=${h.executeEnabled ? "on" : "off"} · sessions=${h.sessions ?? 0}`,
+        );
+      } else {
+        setHealthInfo(null);
+        setHealth(`Error ${res.status}`);
+      }
     } catch (e) {
+      setHealthInfo(null);
       setHealth(e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
@@ -197,6 +236,17 @@ export function OwnerConsole() {
 
   const proxyMode = settings.baseUrl.includes("/api/gateway");
 
+  function clearSecrets() {
+    clearGatewaySettings();
+    setSettings({
+      baseUrl: "http://127.0.0.1:8787",
+      ownerApiKey: "",
+      agentApiToken: "",
+    });
+    setHealth(null);
+    setHealthInfo(null);
+  }
+
   async function checkGrant(sessionId: string) {
     setBusy(true);
     try {
@@ -270,7 +320,12 @@ export function OwnerConsole() {
 
   return (
     <section className="space-y-8 max-w-3xl mx-auto px-6 pt-32 pb-20">
-      <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
+      <div className="flex flex-wrap items-center gap-3">
+        <h1 className="text-3xl font-light text-orange-400">Owner console</h1>
+        <GatewayNetworkChip health={healthInfo} />
+      </div>
+      <GatewayConnectionWarnings baseUrl={settings.baseUrl} proxyMode={proxyMode} />
+      <GatewaySecretsPanel onClear={clearSecrets} />
       <p className="text-white/70 text-sm">
         {proxyMode
           ? "Using hosted gateway proxy — owner key is injected on the server when INTENTGUARD_OWNER_API_KEY is set on Vercel."
@@ -442,9 +497,12 @@ export function OwnerConsole() {
                 </span>
               )}
               {grantTxPlanById[s.sessionId] && (
-                <pre className="text-[9px] text-white/45 max-w-xs max-h-24 overflow-auto mt-1 text-left">
-                  {grantTxPlanById[s.sessionId].slice(0, 400)}…
-                </pre>
+                <GrantTxPlanPanel
+                  json={grantTxPlanById[s.sessionId]}
+                  onCopy={() =>
+                    void navigator.clipboard.writeText(grantTxPlanById[s.sessionId])
+                  }
+                />
               )}
               {!s.revoked && (
                 <>
@@ -478,6 +536,10 @@ export function OwnerConsole() {
 
       <div className="border border-white/10 rounded-xl p-6 bg-white/5">
         <h2 className="text-[#75bfcf] text-lg mb-2">Agent propose test</h2>
+        <p className="text-white/50 text-xs mb-2">
+          <code className="text-white/70">POST /v1/propose</code> gates policy only — it does{" "}
+          <strong className="text-white/80">not</strong> broadcast orders (use execute on sidecar).
+        </p>
         <div className="flex gap-2">
           <button
             type="button"

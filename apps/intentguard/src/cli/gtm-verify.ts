@@ -57,5 +57,7 @@ const srePath = join(repoRoot, "docs/SRE.md");
 assert.ok(existsSync(srePath), "missing SRE.md");
 const pkgScripts = pkg.scripts;
 assert.ok(pkgScripts["platform:verify"], "package.json must define platform:verify");
+assert.ok(pkgScripts["ux:verify"], "package.json must define ux:verify");
+assert.ok(existsSync(join(repoRoot, "docs/UX.md")), "missing UX.md");
 
 console.log("OK gtm-verify:", required.length, "artifacts + nav/simulator/onboarding strings");
