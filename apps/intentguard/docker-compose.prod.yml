@@ -1,0 +1,8 @@
+# Production overrides — use with: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+services:
+  intentguard-gateway:
+    environment:
+      INTENTGUARD_REQUIRE_DATA_KEY: "1"
+      # Set in shell or .env (never commit): INTENTGUARD_DATA_KEY, INTENTGUARD_OWNER_API_KEY, INTENTGUARD_CORS_ORIGINS
+      INJECTIVE_NETWORK: testnet
+      INTENTGUARD_READY_LCD: "0"

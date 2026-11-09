@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { fetchHostedStatus } from "@/lib/hosted";
 
 const steps = [
   {
@@ -57,17 +58,26 @@ const steps = [
 
 export function OnboardingChecklist() {
   const [hosted, setHosted] = useState(false);
+  const [proxyReady, setProxyReady] = useState(false);
 
   useEffect(() => {
     setHosted(!/localhost|127\.0\.0\.1/.test(window.location.hostname));
+    void fetchHostedStatus().then((s) => setProxyReady(Boolean(s?.proxyConfigured)));
   }, []);
 
   return (
     <div className="border border-white/15 rounded-2xl bg-white/5 p-6 space-y-4">
-      {hosted && (
+      {hosted && !proxyReady && (
         <p className="text-amber-200/90 text-sm border border-amber-500/30 rounded-lg px-3 py-2 bg-amber-950/40">
-          You are on the <strong>hosted demo</strong>. Steps 2–7 need the sidecar on your machine
-          (127.0.0.1:8787). Step 1 works here.
+          Sidecar proxy not configured on this host — complete{" "}
+          <code className="text-amber-50">docs/DEPLOY-PRODUCTION.md</code> or run the gateway locally
+          for steps 2–7.
+        </p>
+      )}
+      {hosted && proxyReady && (
+        <p className="text-[#c8ecf4]/90 text-sm border border-[#75bfcf]/30 rounded-lg px-3 py-2 bg-[#0d3d4a]/40">
+          Hosted production — use <Link href="/console" className="text-[#75bfcf] underline">/console</Link>{" "}
+          for steps 2–7 (Vercel proxy to your sidecar).
         </p>
       )}
       <ol className="space-y-4">

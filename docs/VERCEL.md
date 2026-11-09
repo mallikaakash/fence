@@ -46,17 +46,27 @@ Proofs page uses committed `public/spike/*.json` on Vercel (no local `.spike/`).
 |----------|----------|---------|
 | (none) | for demo | `/`, `/trade`, `/portfolio`, `/start`, `/history` — public LCD for grant audit |
 
-### Optional — remote sidecar proxy (design partners)
+### Production — remote sidecar proxy (required for hosted `/console`)
 
-Set on Vercel so `/console` can use **Vercel proxy** (`/api/gateway`) without pasting the owner key in the browser:
+Set on Vercel so `/console` uses **Vercel proxy** (`/api/gateway`). Owner key stays on the server when set here:
 
 | Variable | Example |
 |----------|---------|
 | `INTENTGUARD_GATEWAY_URL` | `https://your-tunnel-or-vpc:8787` (must be reachable from Vercel) |
 | `INTENTGUARD_OWNER_API_KEY` | `own_…` from your sidecar |
 
+Also set:
+
+| Variable | Value |
+|----------|--------|
+| `NEXT_PUBLIC_INTENTGUARD_PROXY_DEFAULT` | `1` |
+
+Check: `GET /api/hosted/status` → `proxyConfigured: true`.
+
+Full topology: [DEPLOY-PRODUCTION.md](./DEPLOY-PRODUCTION.md).
+
 Agent calls still send `Authorization: Bearer agt_…` from the client (localStorage). Owner routes use the server-injected owner key when the client does not send `own_…`.
 
 Local development: run `npm run gateway` + `npm run web:dev`; use `http://127.0.0.1:8787` in Console (not the proxy).
 
-Routes after deploy: `/`, `/start`, `/trade`, `/console`, `/portfolio`, `/history`, `/api/gateway/*` (if proxy env set).
+Routes after deploy: `/`, `/start`, `/trade`, `/console`, `/portfolio`, `/history`, `/limitations`, `/api/hosted/status`, `/api/gateway/*` (when proxy env set).

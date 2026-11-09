@@ -1,0 +1,26 @@
+# Blueprint: IntentGuard sidecar (stateful — use a disk mount in dashboard)
+services:
+  - type: web
+    name: intentguard-gateway
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /health/ready
+    envVars:
+      - key: DOCKER
+        value: "1"
+      - key: INTENTGUARD_PORT
+        value: "8787"
+      - key: INTENTGUARD_DATA_DIR
+        value: /data/.intentguard
+      - key: INTENTGUARD_REQUIRE_DATA_KEY
+        value: "1"
+      - key: INJECTIVE_NETWORK
+        value: testnet
+      - key: INTENTGUARD_DATA_KEY
+        generateValue: true
+      - key: INTENTGUARD_CORS_ORIGINS
+        sync: false
+      - key: INTENTGUARD_OWNER_API_KEY
+        generateValue: true

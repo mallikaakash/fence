@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { GatewayHealthJson } from "@/lib/gateway/health-types";
+import { fetchHostedStatus, isHostedHostname } from "@/lib/hosted";
 import {
   gatewaySecretsStale,
   gatewaySecretsSavedAt,
@@ -11,20 +12,32 @@ import {
 export function EnvironmentRibbon() {
   const [hosted, setHosted] = useState(false);
   const [path, setPath] = useState("");
+  const [proxyReady, setProxyReady] = useState(false);
 
   useEffect(() => {
-    setHosted(!/localhost|127\.0\.0\.1/.test(window.location.hostname));
+    setHosted(isHostedHostname(window.location.hostname));
     setPath(window.location.pathname);
+    void fetchHostedStatus().then((s) => setProxyReady(Boolean(s?.proxyConfigured)));
   }, []);
 
   if (!hosted) return null;
 
   const onConsole = path === "/console";
+  if (proxyReady) {
+    return (
+      <div className="fixed top-0 inset-x-0 z-[60] bg-[#0d3d4a]/95 border-b border-[#75bfcf]/40 text-[#c8ecf4] text-xs text-center py-1.5 px-3">
+        {onConsole
+          ? "Hosted production — console uses Vercel proxy to your sidecar."
+          : "Hosted production — grant audit is public; owner flows use /console with sidecar proxy."}
+      </div>
+    );
+  }
+
   return (
     <div className="fixed top-0 inset-x-0 z-[60] bg-amber-950/90 border-b border-amber-500/40 text-amber-100 text-xs text-center py-1.5 px-3">
       {onConsole
-        ? "Hosted demo — use Vercel proxy or run npm run web:dev with local gateway (see /start)."
-        : "Hosted demo — Grant Audit works here; owner flows need local sidecar."}
+        ? "Sidecar not wired — set INTENTGUARD_GATEWAY_URL on Vercel (see docs/DEPLOY-PRODUCTION.md) or use local npm run web:dev."
+        : "Grant audit works here; owner console needs a deployed sidecar + Vercel proxy env."}
     </div>
   );
 }
@@ -72,7 +85,7 @@ export function GatewaySecretsPanel({ onClear }: { onClear: () => void }) {
     <div className="border border-white/10 rounded-xl p-4 bg-black/30 space-y-3 text-xs text-white/70">
       <p>
         Owner and agent tokens are stored in <strong className="text-white/90">browser localStorage</strong> on
-        this device only. Clear after demos on shared machines; prefer local{" "}
+        this device only. Clear on shared machines; with Vercel proxy the owner key can stay server-side only.{" "}
         <code className="text-white/80">npm run web:dev</code> over untrusted extensions.
       </p>
       {hasSecrets && savedAt && (

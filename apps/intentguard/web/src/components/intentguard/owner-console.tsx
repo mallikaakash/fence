@@ -12,6 +12,7 @@ import {
   gatewayPropose,
   gatewayRevokeSession,
 } from "@/lib/gateway/client";
+import { fetchHostedStatus } from "@/lib/hosted";
 import {
   clearGatewaySettings,
   loadGatewaySettings,
@@ -128,6 +129,21 @@ export function OwnerConsole() {
       return merged;
     });
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isHosted = !/^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname);
+    const storedUrl = localStorage.getItem("intentguard.gateway.url");
+    if (!isHosted || storedUrl) return;
+    void fetchHostedStatus().then((status) => {
+      if (status?.useHostedProxyDefault && status.proxyConfigured) {
+        persist({
+          baseUrl: `${window.location.origin}/api/gateway`,
+          ownerApiKey: "",
+        });
+      }
+    });
+  }, [persist]);
 
   async function ping() {
     setBusy(true);
