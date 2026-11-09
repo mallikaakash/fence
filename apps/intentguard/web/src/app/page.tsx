@@ -48,40 +48,41 @@ export default function Home() {
         </HeroStagger>
       </section>
 
-      <section className="features-section flex flex-col min-h-screen px-[5%] md:pl-[20%] md:pr-[10%] py-16">
-        <div className="flex flex-col items-start max-w-5xl mt-[6%] md:mt-[10%]">
+      <section className="features-section flex flex-col px-[5%] md:pl-[20%] md:pr-[10%] py-20 pb-28">
+        <div className="flex flex-col items-start max-w-5xl">
           <MotionReveal>
-            <h2 className="text-3xl font-sans font-thin uppercase text-left mb-8 inline-block">
+            <h2 className="text-3xl font-sans font-thin uppercase text-left mb-3 inline-block">
               <span className="motion-title-chip bg-orange-400 px-2 text-black">Why this is different</span>
             </h2>
+            <p className="text-white/55 text-sm max-w-2xl mb-8">
+              Not Helix grid bots — limits for bring-your-own AI on testnet.
+            </p>
           </MotionReveal>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             <FeatureCard
               delayMs={0}
-              title="Hard caps"
-              body="Max order size, daily margin, and allowed markets — enforced before trades hit the exchange."
+              href="/start"
+              title="Protect"
+              body="Caps on size, markets, and daily margin before anything is broadcast."
             />
             <FeatureCard
-              delayMs={90}
-              title="Keplr in control"
-              body="You approve typed AuthZ and can revoke anytime. We never see your seed phrase."
+              delayMs={80}
+              href="/start"
+              title="Your wallet"
+              body="Typed grant in Keplr or Leap; revoke anytime. We never see your seed phrase."
             />
             <FeatureCard
-              delayMs={180}
-              title="Demo agent"
-              body="See allow/deny decisions with plain phrases — same policy engine as a real bot."
-            />
-            <FeatureCard
-              delayMs={270}
-              title="Grant audit"
-              body="Free scan for risky generic AuthZ on your wallet before you connect AI tools."
+              delayMs={160}
+              href="/agent"
+              title="Your agent"
+              body="Same allow/deny engine for demo phrases and real agt_… bots."
             />
           </div>
-          <MotionReveal delayMs={120}>
+          <MotionReveal delayMs={100}>
             <p className="text-white/50 text-sm mt-8 max-w-2xl">
-              Notional limits are gateway-enforced, not inside every Injective contract.{" "}
+              Caps are enforced by the gateway before broadcast.{" "}
               <Link href="/limitations" className="text-[#75bfcf] underline">
-                Limits &amp; trust
+                How it works →
               </Link>
             </p>
           </MotionReveal>
@@ -95,19 +96,25 @@ function FeatureCard({
   title,
   body,
   delayMs,
+  href,
 }: {
   title: string;
   body: string;
   delayMs: number;
+  href: string;
 }) {
   return (
     <MotionReveal delayMs={delayMs}>
-      <div className="motion-card glass-card p-6 rounded-2xl">
+      <Link
+        href={href}
+        className="motion-card glass-card p-6 rounded-2xl block h-full hover:border-[#75bfcf]/40 transition-colors"
+      >
         <h3 className="text-xl font-bold mb-3">
           <span className="bg-[#75bfcf] px-2 text-black">{title}</span>
         </h3>
-        <p className="text-white/80 leading-relaxed">{body}</p>
-      </div>
+        <p className="text-white/80 leading-relaxed text-sm">{body}</p>
+        <span className="text-[#75bfcf] text-xs mt-4 inline-block">Open →</span>
+      </Link>
     </MotionReveal>
   );
 }
