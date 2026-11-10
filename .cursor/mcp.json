@@ -21,14 +21,10 @@
       }
     },
     "intentguard-agent": {
-      "command": "node",
-      "args": [
-        "--experimental-strip-types",
-        "apps/intentguard/src/mcp/agent-server.ts"
-      ],
+      "command": "bash",
+      "args": ["scripts/run-intentguard-agent-mcp.sh"],
       "env": {
-        "INJECTIVE_NETWORK": "testnet",
-        "INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway"
+        "INJECTIVE_NETWORK": "testnet"
       }
     }
   }
