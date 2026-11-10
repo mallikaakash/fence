@@ -2,30 +2,56 @@ import {
   IndexerGrpcAccountApi,
   IndexerGrpcDerivativesApi,
 } from "@injectivelabs/sdk-ts";
-import { spikeEndpoints } from "./network.ts";
+import { indexerEndpointForNetwork, spikeEndpoints } from "./network.ts";
+import { readinessQueryTimeoutMs, withQueryTimeout } from "./queryTimeout.ts";
 
 /**
  * Post-trade checks via Indexer API (api.injective.exchange / sdk-ts).
  * Complements MsgExec broadcast — confirms order + balance state off the tx receipt.
  */
-export async function fetchSubaccountUsdcBalance(params: {
+function parseChainBalanceInteger(amount: string | undefined): string | null {
+  if (amount === undefined) return "0";
+  if (amount === "") return "0";
+  if (!/^\d+$/.test(amount)) return null;
+  return amount;
+}
+
+export async function fetchSubaccountQuoteBalance(params: {
   subaccountId: string;
   denom: string;
+  network?: "testnet" | "mainnet";
+  timeoutMs?: number;
 }): Promise<{ availableBalance: string; totalBalance: string } | null> {
-  const endpoints = spikeEndpoints();
-  const api = new IndexerGrpcAccountApi(endpoints.indexer);
+  const network = params.network ?? "testnet";
+  const timeoutMs = params.timeoutMs ?? readinessQueryTimeoutMs();
+  const indexer = indexerEndpointForNetwork(network);
+  const api = new IndexerGrpcAccountApi(indexer);
   try {
-    const bal = await api.fetchSubaccountBalance(
-      params.subaccountId,
-      params.denom,
+    const bal = await withQueryTimeout("indexer.subaccountBalance", timeoutMs, () =>
+      api.fetchSubaccountBalance(params.subaccountId, params.denom),
     );
+    const available = parseChainBalanceInteger(bal.deposit?.availableBalance);
+    const total = parseChainBalanceInteger(bal.deposit?.totalBalance);
+    if (available === null || total === null) return null;
     return {
-      availableBalance: bal.deposit?.availableBalance ?? "0",
-      totalBalance: bal.deposit?.totalBalance ?? "0",
+      availableBalance: available,
+      totalBalance: total,
     };
   } catch {
     return null;
   }
+}
+
+/** Testnet spike default (unchanged behavior for post-exec verify). */
+export async function fetchSubaccountUsdcBalance(params: {
+  subaccountId: string;
+  denom: string;
+}): Promise<{ availableBalance: string; totalBalance: string } | null> {
+  return fetchSubaccountQuoteBalance({
+    subaccountId: params.subaccountId,
+    denom: params.denom,
+    network: "testnet",
+  });
 }
 
 export async function fetchOpenDerivativeOrders(params: {

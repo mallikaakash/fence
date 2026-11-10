@@ -110,10 +110,35 @@ describe("agent HTTP", () => {
       phase: string;
       broadcast: boolean;
       dryRun: boolean;
+      status: string;
+      proposalId?: string;
     };
     assert.equal(body.phase, "policy_check");
     assert.equal(body.broadcast, false);
     assert.equal(body.dryRun, true);
+    assert.equal(body.status, "allowed");
+    assert.ok(body.proposalId?.startsWith("prp_"));
+  });
+
+  it("execute requires Idempotency-Key and proposalId", async () => {
+    const base = `http://127.0.0.1:${port}`;
+    const missing = await fetch(`${base}/v1/execute`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${agentToken}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        intent: {
+          marketId: "0xmarket",
+          margin: "1",
+          leverage: 1,
+          price: "1",
+          quantity: "1",
+        },
+      }),
+    });
+    assert.equal(missing.status, 400);
   });
 
   it("replays propose with Idempotency-Key", async () => {

@@ -1,5 +1,6 @@
 import { getEthereumAddress, PrivateKey, getSubaccountId } from "@injectivelabs/sdk-ts";
 import type { IntentGuardGateway } from "../gateway/session.ts";
+import type { SessionBroadcastGateFailure } from "../execution/sessionGate.ts";
 import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
 import type { TradeIntent } from "../policy/types.ts";
 import { IsolatedGranteeSigner } from "../gateway/signer.ts";
@@ -77,6 +78,10 @@ export async function executeAgentIntent(params: {
   ownerPrivateKeyHex?: string | null;
   requireOnChainGrant?: boolean;
   network?: "testnet" | "mainnet";
+  /** Final in-process gate immediately before MsgExec broadcast. */
+  preBroadcastCheck?: () =>
+    | { ok: true }
+    | SessionBroadcastGateFailure;
 }): Promise<
   Awaited<ReturnType<typeof proposeAndExecLimitOrder>> & {
     sessionId?: string;
@@ -185,6 +190,31 @@ export async function executeAgentIntent(params: {
         grantStatus: typeof grantStatus;
       };
     }
+  }
+
+  if (params.preBroadcastCheck) {
+    const gate = params.preBroadcastCheck();
+    if (!gate.ok) {
+      return {
+        status: "denied",
+        stage: "policy",
+        reasons: [gate.message],
+        signed: false,
+        broadcast: false,
+        sessionId: session.sessionId,
+      };
+    }
+  }
+
+  if (session.revoked || !session.granteePrivateKeyHex) {
+    return {
+      status: "denied",
+      stage: "policy",
+      reasons: ["session revoked or grantee key cleared"],
+      signed: false,
+      broadcast: false,
+      sessionId: session.sessionId,
+    };
   }
 
   const signer = new IsolatedGranteeSigner({

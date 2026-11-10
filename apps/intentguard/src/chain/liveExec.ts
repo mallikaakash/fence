@@ -136,6 +136,8 @@ export async function proposeAndExecLimitOrder(params: {
   }
 
   // Broadcast only after policy + approval-bound sign. Chain secp256k1 is via grantee broadcaster.
+  // Limitation: revocation or session expiry after signApprovedPayload but before this await cannot
+  // recall an in-flight broadcast — gateway revoke clears session keys but signer may already hold material.
   const chain = await attemptDerivativeLimitMsgExec({
     owner: params.owner,
     grantee: params.grantee,

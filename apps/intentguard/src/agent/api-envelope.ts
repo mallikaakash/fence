@@ -15,6 +15,10 @@ export type ProposeApiResponse = {
   granteeAddress?: string;
   note?: string;
   idempotentReplay?: boolean;
+  /** Present when status=allowed and session has subaccount binding. */
+  proposalId?: string;
+  proposalExpiresAt?: string;
+  intentFingerprint?: string;
 };
 
 export type ExecuteApiResponse = {
@@ -28,6 +32,12 @@ export type ExecuteApiResponse = {
   errorCode?: string;
   sessionId?: string;
   txHash?: string;
+  proposalId?: string;
+  idempotencyKeyHash?: string;
+  requestFingerprint?: string;
+  executionState?: string;
+  idempotentReplay?: boolean;
+  warning?: string;
 };
 
 export const PROPOSE_AGENT_NOTE =

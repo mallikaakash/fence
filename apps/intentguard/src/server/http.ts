@@ -10,9 +10,12 @@ import { scoreGrants } from "../authz/score.ts";
 import { formatGrantAuditReport } from "../authz/formatAudit.ts";
 import { TRADING_SUBACCOUNT_INDEX } from "../chain/keys.ts";
 import { loadConfig, rotateOwnerApiKey, type GatewayConfig } from "./config.ts";
-import { SecureFileStore } from "./secureStore.ts";
+import { createGatewayStateStore, type GatewayStateStore } from "../persistence/gatewayStateStore.ts";
 import { executeAgentIntent } from "./execute.ts";
 import { verifySessionGrantOnChain } from "../authz/verifySessionGrant.ts";
+import { assessSessionReadiness } from "../readiness/assessSessionReadiness.ts";
+import { ReadinessNetworkRejectedError } from "../readiness/network.ts";
+import { assessSessionExposure } from "../exposure/assessSessionExposure.ts";
 import { buildGrantTxPlan } from "../authz/buildGrantTx.ts";
 import { safeEqual } from "./auth.ts";
 import { RateLimiter } from "./rateLimit.ts";
@@ -22,6 +25,27 @@ import { lcdRestBaseUrl } from "../chain/network.ts";
 import { buildOpenApiDocument } from "./openapi.ts";
 import { envelopeExecute, envelopePropose } from "../agent/api-envelope.ts";
 import { idempotencyGet, idempotencySet } from "./idempotency.ts";
+import { ExecutionSafetyStore } from "../execution/executionSafetyStore.ts";
+import { orchestrateAgentExecute } from "../execution/executeOrchestrator.ts";
+import { recoverExecutionSafetyOnStartup } from "../execution/executionRecovery.ts";
+import { SessionExecutionGuard } from "../execution/sessionExecutionGuard.ts";
+import type { ProposeApiResponse } from "../agent/api-envelope.ts";
+import {
+  StateWriteCoordinator,
+  StateWriteFrozenError,
+  StateWriteShutdownSkippedError,
+  WriterLeaseLostError,
+} from "../persistence/stateWriteCoordinator.ts";
+import {
+  STATE_WRITE_FROZEN_ERROR_CODE,
+  STATE_WRITE_FROZEN_MESSAGE,
+} from "../persistence/stateWriteFreezeEnv.ts";
+
+type ProposeWithProposal = ProposeApiResponse & {
+  proposalId?: string;
+  proposalExpiresAt?: string;
+  intentFingerprint?: string;
+};
 
 type Json = Record<string, unknown>;
 
@@ -90,7 +114,7 @@ function bearer(req: IncomingMessage): string | null {
 export function startGatewayServer() {
   const config = loadConfig();
   let ownerApiKey = config.ownerApiKey;
-  const store = new SecureFileStore(config.dataDir, config.dataKey);
+  let store: GatewayStateStore | null = null;
   const gateway = new IntentGuardGateway();
   const limiter = new RateLimiter({
     windowMs: 60_000,
@@ -107,22 +131,75 @@ export function startGatewayServer() {
 
   let shuttingDown = false;
   let inFlight = 0;
-  let persistQueue = Promise.resolve();
+  const executionSafety = new ExecutionSafetyStore();
+  const sessionExecutionGuard = new SessionExecutionGuard();
+  let shutdownPromise: Promise<void> | null = null;
+  let startupError: Error | null = null;
 
-  function persist(): Promise<void> {
-    persistQueue = persistQueue.then(() => {
-      store.save(gateway.exportSessions(), gateway.audit.list());
-    });
-    return persistQueue;
+  const stateWrite = new StateWriteCoordinator({
+    dataDir: config.dataDir,
+    requireWriterLease:
+      config.requireWriterLease && config.stateBackend !== "gcs",
+  });
+
+  async function flushPersist(): Promise<void> {
+    if (!store) throw new Error("state store not initialized");
+    store.assertMayWrite?.();
+    executionSafety.pruneOld(7 * 24 * 60 * 60 * 1000);
+    const execution = executionSafety.exportState();
+    await store.save(gateway.exportSessions(), gateway.audit.list(), execution);
   }
 
-  function hydrate() {
-    const state = store.load();
+  function persist(opts?: { shutdownFlush?: boolean }): Promise<void> {
+    return stateWrite
+      .enqueuePersist(() => {
+        return flushPersist();
+      }, opts)
+      .catch((err) => {
+        if (err instanceof StateWriteShutdownSkippedError) {
+          throw err;
+        }
+        logJson("error", "persist_failed", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
+      });
+  }
+
+  /** Await durable state.json write (serialized with other persist calls). */
+  function persistNow(opts?: { shutdownFlush?: boolean }): Promise<void> {
+    return persist(opts);
+  }
+
+  async function hydrateAndRecover(): Promise<void> {
+    store = await createGatewayStateStore(config, stateWrite.holderId);
+    if (config.stateBackend === "gcs" && config.requireGcsState && store.backend !== "gcs") {
+      throw new Error("hosted configuration requires GCS state backend");
+    }
+    await stateWrite.startupAcquireLease();
+    const state = await store.load();
     for (const s of state.sessions) gateway.importSession(s);
     gateway.audit.replaceAll(state.audit);
+    executionSafety.importState({
+      proposals: state.proposals,
+      executeIdempotency: state.executeIdempotency,
+    });
+  if (stateWrite.isFrozen()) {
+      return;
+    }
+    stateWrite.beginMutation();
+    try {
+      recoverExecutionSafetyOnStartup(executionSafety, gateway.audit);
+    } finally {
+      stateWrite.endMutation();
+    }
+    await persist();
   }
 
-  hydrate();
+  const startupReady = hydrateAndRecover().catch((err) => {
+    startupError = err instanceof Error ? err : new Error(String(err));
+    logJson("error", "startup_failed", { error: startupError.message });
+  });
 
   logJson("info", "startup", {
     version: INTENTGUARD_VERSION,
@@ -130,6 +207,10 @@ export function startGatewayServer() {
     port: config.port,
     dataDir: config.dataDir,
     network: config.network,
+    stateBackend: config.stateBackend,
+    gcsStateObject: config.gcsStateBucket
+      ? `gs://${config.gcsStateBucket}/${config.gcsStateObject}`
+      : undefined,
   });
 
   const server = createServer(async (req, res) => {
@@ -154,6 +235,15 @@ export function startGatewayServer() {
       });
       return;
     }
+
+    if (startupError) {
+      send(req, res, 503, {
+        error: "gateway startup failed",
+        detail: startupError.message,
+      });
+      return;
+    }
+    await startupReady;
 
     inFlight++;
     let path = "";
@@ -180,6 +270,11 @@ export function startGatewayServer() {
           service: "intentguard-gateway",
           version: INTENTGUARD_VERSION,
           executeEnabled: config.executeEnabled,
+          executionMaintenance: config.executionMaintenance,
+          stateWriteFreeze: stateWrite.isFrozen(),
+          stateWriteStatus: stateWrite.status(),
+          stateBackend: store?.backend ?? config.stateBackend,
+          stateLocation: store?.location,
           network: config.network,
           requireOnChainGrant: config.requireOnChainGrant,
           encryptionAtRest: Boolean(config.dataKey),
@@ -209,7 +304,8 @@ export function startGatewayServer() {
             lcdOk = false;
           }
         }
-        const ready = dataDirOk && lcdOk && !shuttingDown;
+        const ready =
+          dataDirOk && lcdOk && !shuttingDown && !startupError;
         return send(req, res, ready ? 200 : 503, {
           ok: ready,
           dataDir: config.dataDir,
@@ -227,13 +323,56 @@ export function startGatewayServer() {
       const owner = bearer(req);
       const isOwner = Boolean(owner && safeEqual(owner, ownerApiKey));
 
+      if (req.method === "POST" && path === "/v1/owner/state-write/freeze") {
+        if (!isOwner) {
+          return send(req, res, 401, { error: "owner authorization required" });
+        }
+        stateWrite.beginMutation();
+        try {
+          gateway.audit.append("state_write_frozen", "Operator state write freeze", {});
+        } finally {
+          stateWrite.endMutation();
+        }
+        await persist();
+        const result = await stateWrite.freeze();
+        return send(req, res, 200, {
+          ...result,
+          stateWriteStatus: stateWrite.status(),
+        });
+      }
+
+      if (req.method === "POST" && path === "/v1/owner/state-write/unfreeze") {
+        if (!isOwner) {
+          return send(req, res, 401, { error: "owner authorization required" });
+        }
+        stateWrite.unfreeze();
+        stateWrite.beginMutation();
+        try {
+          gateway.audit.append("state_write_unfrozen", "Operator state write unfreeze", {});
+        } finally {
+          stateWrite.endMutation();
+        }
+        await persist();
+        return send(req, res, 200, { stateWriteStatus: stateWrite.status() });
+      }
+
+      if (req.method === "GET" && path === "/v1/owner/state-write/status") {
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        return send(req, res, 200, { stateWriteStatus: stateWrite.status() });
+      }
+
       if (req.method === "POST" && path === "/v1/owner/rotate-api-key") {
         if (!isOwner) {
           return send(req, res, 401, { error: "owner authorization required" });
         }
-        ownerApiKey = rotateOwnerApiKey(config.configPath);
-        gateway.audit.append("owner_key_rotated", "Owner HTTP API key rotated", {});
-        persist();
+        stateWrite.beginMutation();
+        try {
+          ownerApiKey = rotateOwnerApiKey(config.configPath);
+          gateway.audit.append("owner_key_rotated", "Owner HTTP API key rotated", {});
+        } finally {
+          stateWrite.endMutation();
+        }
+        await persist();
         return send(req, res, 200, {
           ownerApiKey,
           note: "Update automations and console with the new key",
@@ -274,15 +413,22 @@ export function startGatewayServer() {
             ? Math.floor(body.grantExpirySeconds)
             : undefined;
 
-        const { view, agent } = gateway.createSession({
-          policy: body.policy,
-          granteeAddress,
-          granteePrivateKeyHex: granteePk.toPrivateKeyHex().replace(/^0x/, ""),
-          ownerInjectiveAddress: body.ownerInjectiveAddress,
-          subaccountId,
-          subaccountIndex: subIndex,
-          grantExpirySeconds,
-        });
+        stateWrite.beginMutation();
+        let view;
+        let agent;
+        try {
+          ({ view, agent } = gateway.createSession({
+            policy: body.policy,
+            granteeAddress,
+            granteePrivateKeyHex: granteePk.toPrivateKeyHex().replace(/^0x/, ""),
+            ownerInjectiveAddress: body.ownerInjectiveAddress,
+            subaccountId,
+            subaccountIndex: subIndex,
+            grantExpirySeconds,
+          }));
+        } finally {
+          stateWrite.endMutation();
+        }
 
         const plan = planTradingGrant({
           granteeAddress,
@@ -291,7 +437,7 @@ export function startGatewayServer() {
           expirySeconds: grantExpirySeconds,
         });
 
-        persist();
+        await persist();
 
         return send(req, res, 201, {
           session: view,
@@ -334,6 +480,74 @@ export function startGatewayServer() {
         return send(req, res, 200, { sessionId: id, grantStatus: status });
       }
 
+      const readinessMatch = path.match(/^\/v1\/sessions\/([^/]+)\/readiness$/);
+      if (req.method === "GET" && readinessMatch) {
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        const id = readinessMatch[1]!;
+        const session = gateway.getSessionRecord(id);
+        if (!session) return send(req, res, 404, { error: "session not found" });
+        if (session.revoked) {
+          return send(req, res, 410, {
+            error: "session revoked",
+            sessionId: id,
+          });
+        }
+        const mainnet = url.searchParams.get("mainnet") === "1";
+        const marketId = url.searchParams.get("marketId") ?? undefined;
+        try {
+          const readiness = await assessSessionReadiness({
+            session,
+            network: mainnet ? "mainnet" : config.network,
+            marketId,
+            executeEnabled: config.executeEnabled,
+          });
+          return send(req, res, 200, readiness as unknown as Json);
+        } catch (e) {
+          if (e instanceof ReadinessNetworkRejectedError) {
+            return send(req, res, 400, {
+              error: e.message,
+              supportedNetworks: ["testnet"],
+            });
+          }
+          throw e;
+        }
+      }
+
+      const exposureMatch = path.match(/^\/v1\/sessions\/([^/]+)\/exposure$/);
+      if (req.method === "GET" && exposureMatch) {
+        if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
+        const id = exposureMatch[1]!;
+        const session = gateway.getSessionRecord(id);
+        if (!session) return send(req, res, 404, { error: "session not found" });
+        if (session.revoked) {
+          return send(req, res, 410, {
+            error: "session revoked",
+            sessionId: id,
+          });
+        }
+        const mainnet = url.searchParams.get("mainnet") === "1";
+        if (url.searchParams.has("subaccountId")) {
+          return send(req, res, 400, {
+            error: "subaccountId query not allowed — session subaccount is used",
+          });
+        }
+        try {
+          const exposure = await assessSessionExposure({
+            session,
+            network: mainnet ? "mainnet" : config.network,
+          });
+          return send(req, res, 200, exposure as unknown as Json);
+        } catch (e) {
+          if (e instanceof ReadinessNetworkRejectedError) {
+            return send(req, res, 400, {
+              error: e.message,
+              supportedNetworks: ["testnet"],
+            });
+          }
+          throw e;
+        }
+      }
+
       const grantTxMatch = path.match(/^\/v1\/sessions\/([^/]+)\/grant-tx-plan$/);
       if (req.method === "GET" && grantTxMatch) {
         if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
@@ -369,9 +583,43 @@ export function startGatewayServer() {
       if (req.method === "POST" && revokeMatch) {
         if (!isOwner) return send(req, res, 401, { error: "owner authorization required" });
         const id = revokeMatch[1]!;
-        const view = gateway.revoke(id);
-        persist();
-        return send(req, res, 200, { session: view, revoked: true });
+        const inFlightPhase = sessionExecutionGuard.signalRevokeDuringExecute(id);
+        const hold = sessionExecutionGuard.getHold(id);
+        if (inFlightPhase === "broadcasting") {
+          gateway.audit.append(
+            "revoke_during_broadcast",
+            "Session revoked while execute may have submitted a chain transaction — revocation cannot cancel an already broadcast tx",
+            { sessionId: id, proposalId: hold?.proposalId, idempotencyKeyHash: hold?.idempotencyKeyHash },
+          );
+        } else if (inFlightPhase === "claimed") {
+          gateway.audit.append("revoke_during_execute", "Session revoked before broadcast boundary", {
+            sessionId: id,
+            proposalId: hold?.proposalId,
+            revokeSignaled: true,
+          });
+        }
+        stateWrite.beginMutation();
+        let view;
+        try {
+          view = gateway.revoke(id);
+        } finally {
+          stateWrite.endMutation();
+        }
+        await persist();
+        return send(req, res, 200, {
+          session: view,
+          revoked: true,
+          executeInFlight: hold
+            ? {
+                phase: hold.phase,
+                proposalId: hold.proposalId,
+                note:
+                  hold.phase === "broadcasting"
+                    ? "A chain transaction may already have been submitted; revocation clears grantee key but cannot recall an on-chain tx."
+                    : "In-flight execute should fail closed on the next pre-broadcast gate.",
+              }
+            : undefined,
+        });
       }
 
       if (req.method === "GET" && path === "/v1/agent/session") {
@@ -419,17 +667,46 @@ export function startGatewayServer() {
             });
           }
         }
-        const result = gateway.propose(
-          { role: "agent", apiToken: token },
-          body.intent,
-        );
-        const enveloped = envelopePropose(
-          result as unknown as Record<string, unknown>,
-        );
-        if (idemKey && enveloped.sessionId) {
-          idempotencySet(enveloped.sessionId, idemKey, enveloped);
+        stateWrite.beginMutation();
+        let enveloped: ReturnType<typeof envelopePropose>;
+        try {
+          const result = gateway.propose(
+            { role: "agent", apiToken: token },
+            body.intent,
+          );
+          enveloped = envelopePropose(
+            result as unknown as Record<string, unknown>,
+          );
+          if (
+            enveloped.status === "allowed" &&
+            boundSession &&
+            boundSession.subaccountId
+          ) {
+            const proposal = executionSafety.createApprovedProposal({
+              sessionId: boundSession.sessionId,
+              agentApiToken: token,
+              policy: boundSession.policy,
+              intent: body.intent,
+              subaccountId: boundSession.subaccountId,
+            });
+            gateway.audit.append("proposal_created", "Short-lived execute approval", {
+              sessionId: boundSession.sessionId,
+              proposalId: proposal.proposalId,
+              intentFingerprint: proposal.intentFingerprint,
+              expiresAt: proposal.expiresAt,
+            });
+            (enveloped as ProposeWithProposal).proposalId = proposal.proposalId;
+            (enveloped as ProposeWithProposal).proposalExpiresAt = proposal.expiresAt;
+            (enveloped as ProposeWithProposal).intentFingerprint =
+              proposal.intentFingerprint;
+          }
+          if (idemKey && enveloped.sessionId) {
+            idempotencySet(enveloped.sessionId, idemKey, enveloped);
+          }
+        } finally {
+          stateWrite.endMutation();
         }
-        persist();
+        await persist();
         return send(req, res, 200, enveloped as unknown as Json);
       }
 
@@ -445,32 +722,37 @@ export function startGatewayServer() {
             retryAfterSeconds: agentRetry,
           });
         }
-        if (!config.executeEnabled) {
-          return send(req, res, 503, {
-            error: "execute disabled — operator must enable INTENTGUARD_EXECUTE on gateway",
-          });
-        }
         const body = (await readBody(req, config.maxBodyBytes)) as {
           intent?: TradeIntent;
+          proposalId?: string;
         };
         if (!body.intent?.marketId) {
           return send(req, res, 400, { error: "intent.marketId required" });
         }
-        const result = await executeAgentIntent({
-          gateway,
+        const idempotencyKey = req.headers["idempotency-key"] as string | undefined;
+        const outcome = await orchestrateAgentExecute({
           agentApiToken: token,
+          idempotencyKeyRaw: idempotencyKey,
+          proposalId: body.proposalId ?? "",
           intent: body.intent,
-          ownerPrivateKeyHex: config.ownerPrivateKeyHex ?? null,
-          requireOnChainGrant: config.requireOnChainGrant,
-          network: config.network,
+          deps: {
+            gateway,
+            safety: executionSafety,
+            audit: gateway.audit,
+            config: {
+              executeEnabled: config.executeEnabled,
+              executionMaintenance: config.executionMaintenance,
+              ownerPrivateKeyHex: config.ownerPrivateKeyHex,
+              requireOnChainGrant: config.requireOnChainGrant,
+              network: config.network,
+            },
+            persistNow,
+            sessionGuard: sessionExecutionGuard,
+            stateWrite,
+          },
         });
-        persist();
-        return send(
-          req,
-          res,
-          200,
-          envelopeExecute(result as unknown as Record<string, unknown>) as unknown as Json,
-        );
+        await persist();
+        return send(req, res, outcome.httpStatus, outcome.body as Json);
       }
 
       if (req.method === "POST" && path === "/v1/grants/plan") {
@@ -525,6 +807,18 @@ export function startGatewayServer() {
 
       return send(req, res, 404, { error: "not found" });
     } catch (err) {
+      if (err instanceof StateWriteFrozenError) {
+        return send(req, res, 503, {
+          error: err.message,
+          errorCode: STATE_WRITE_FROZEN_ERROR_CODE,
+        });
+      }
+      if (err instanceof WriterLeaseLostError) {
+        return send(req, res, 503, {
+          error: err.message,
+          errorCode: err.code,
+        });
+      }
       if (err instanceof HttpError) {
         return send(req, res, err.status, { error: err.message });
       }
@@ -549,17 +843,35 @@ export function startGatewayServer() {
   });
 
   async function shutdown(): Promise<void> {
-    if (shuttingDown) return;
+    if (shutdownPromise) return shutdownPromise;
     shuttingDown = true;
-    logJson("info", "shutdown", { inFlight });
-    await new Promise<void>((resolve) => server.close(() => resolve()));
-    const deadline = Date.now() + 30_000;
-    while (inFlight > 0 && Date.now() < deadline) {
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    await persistQueue;
-    store.save(gateway.exportSessions(), gateway.audit.list());
-    logJson("info", "shutdown_complete", {});
+    shutdownPromise = (async () => {
+      logJson("info", "shutdown", { inFlight });
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      const deadline = Date.now() + 30_000;
+      while (inFlight > 0 && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 50));
+      }
+      try {
+        await stateWrite.waitForPersistIdle();
+        await persist({ shutdownFlush: true });
+        await stateWrite.shutdownReleaseLease();
+      } catch (err) {
+        if (err instanceof StateWriteShutdownSkippedError) {
+          logJson("info", "shutdown_persist_skipped", {
+            reason: err.code,
+            message: err.message,
+          });
+        } else {
+          logJson("error", "shutdown_persist_failed", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          throw err;
+        }
+      }
+      logJson("info", "shutdown_complete", {});
+    })();
+    return shutdownPromise;
   }
 
   server.listen(config.port, config.bindHost, () => {
@@ -570,5 +882,5 @@ export function startGatewayServer() {
     console.log(`OpenAPI: http://127.0.0.1:${config.port}/v1/openapi.json`);
   });
 
-  return { server, config, gateway, persist, shutdown };
+  return { server, config, gateway, persist, shutdown, stateWrite, startupReady };
 }

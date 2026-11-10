@@ -306,6 +306,7 @@ export class IntentGuardGateway {
         dailyMarginUsed: string;
         dailyMarginBudget: string;
         dailyMarginRemaining: string;
+        dailyMarginDay?: string;
         maxOrderNotional: string;
         marketIds: string[];
         granteeAddress: string;
@@ -327,7 +328,7 @@ export class IntentGuardGateway {
       dailyMarginBudget: session.policy.dailyMarginBudget,
       dailyMarginRemaining: String(remaining),
       dailyMarginDay: session.dailyMarginDay,
-      maxOrderNotional: session.policy.maxOrderNotional,
+      maxOrderNotional: session.policy.maxOrderNotional ?? "",
       marketIds: session.policy.marketIds,
       granteeAddress: session.granteeAddress,
       ownerInjectiveAddress: session.ownerInjectiveAddress,

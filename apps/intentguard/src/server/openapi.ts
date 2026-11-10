@@ -163,6 +163,32 @@ export function buildOpenApiDocument() {
         post: { summary: "Create session (owner)", security: [{ ownerBearer: [] }] },
         get: { summary: "List sessions (owner)", security: [{ ownerBearer: [] }] },
       },
+      "/v1/sessions/{sessionId}/exposure": {
+        get: {
+          summary: "Read-only subaccount exposure (owner, indexer)",
+          security: [{ ownerBearer: [] }],
+        },
+      },
+      "/v1/sessions/{sessionId}/readiness": {
+        get: {
+          summary: "Execute pre-flight readiness (owner, read-only chain queries)",
+          security: [{ ownerBearer: [] }],
+          parameters: [
+            {
+              name: "sessionId",
+              in: "path",
+              required: true,
+              schema: { type: "string" },
+            },
+            {
+              name: "marketId",
+              in: "query",
+              required: false,
+              schema: { type: "string" },
+            },
+          ],
+        },
+      },
       "/v1/audit/events": {
         get: { summary: "Audit log (owner)", security: [{ ownerBearer: [] }] },
       },

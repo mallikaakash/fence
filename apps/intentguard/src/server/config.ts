@@ -2,6 +2,9 @@ import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { parseDataKey } from "./crypto.ts";
+import { enforceHostedAuthzPolicy } from "../execution/authzConfig.ts";
+import { isExecutionMaintenanceEnabled } from "../execution/executionMaintenance.ts";
+import { isStateWriteFreezeEnvEnabled } from "../persistence/stateWriteFreezeEnv.ts";
 
 export type GatewayConfig = {
   port: number;
@@ -11,6 +14,16 @@ export type GatewayConfig = {
   ownerApiKey: string;
   /** When true, POST /v1/execute may broadcast MsgExec (testnet/mainnet per network env). */
   executeEnabled: boolean;
+  /** When true, reject new executes (deploy/rollback guard). Default off. */
+  executionMaintenance: boolean;
+  /** When true, reject all persistent state mutations (deploy handoff). Default off. */
+  stateWriteFreeze: boolean;
+  requireWriterLease: boolean;
+  /** Native GCS API state object (not FUSE). */
+  gcsStateBucket: string | null;
+  gcsStateObject: string | null;
+  requireGcsState: boolean;
+  stateBackend: "file" | "gcs";
   /** Granter private key for MsgExec — sidecar only, never sent to agents. */
   ownerPrivateKeyHex: string | null;
   network: "testnet" | "mainnet";
@@ -69,6 +82,31 @@ export function loadConfig(): GatewayConfig {
     process.env.INTENTGUARD_EXECUTE === "1" ||
     process.env.INTENTGUARD_EXECUTE === "true";
 
+  const executionMaintenance = isExecutionMaintenanceEnabled();
+  const stateWriteFreeze = isStateWriteFreezeEnvEnabled();
+  const requireWriterLease =
+    process.env.INTENTGUARD_REQUIRE_WRITER_LEASE === "1" ||
+    process.env.INTENTGUARD_REQUIRE_WRITER_LEASE === "true";
+
+  const gcsStateBucket =
+    process.env.INTENTGUARD_GCS_STATE_BUCKET ??
+    process.env.INTENTGUARD_GCS_BUCKET ??
+    null;
+  const gcsStateObject =
+    process.env.INTENTGUARD_GCS_STATE_OBJECT ?? "intentguard/state.json";
+  const requireGcsState =
+    process.env.INTENTGUARD_REQUIRE_GCS_STATE === "1" ||
+    process.env.INTENTGUARD_REQUIRE_GCS_STATE === "true";
+  const stateBackendRaw = process.env.INTENTGUARD_STATE_BACKEND?.toLowerCase();
+  const stateBackend: "file" | "gcs" =
+    stateBackendRaw === "gcs"
+      ? "gcs"
+      : stateBackendRaw === "file"
+        ? "file"
+        : requireGcsState || (process.env.DOCKER === "1" && gcsStateBucket)
+          ? "gcs"
+          : "file";
+
   let ownerPrivateKeyHex: string | null =
     process.env.INTENTGUARD_OWNER_PRIVATE_KEY_HEX?.replace(/^0x/, "") ?? null;
 
@@ -83,6 +121,7 @@ export function loadConfig(): GatewayConfig {
     process.env.INJECTIVE_NETWORK === "mainnet" ? "mainnet" : "testnet";
 
   const requireOnChainGrant = process.env.INTENTGUARD_REQUIRE_ONCHAIN_GRANT !== "0";
+  enforceHostedAuthzPolicy(requireOnChainGrant);
 
   const dataKey = parseDataKey(process.env.INTENTGUARD_DATA_KEY);
   const requireDataKey =
@@ -122,6 +161,13 @@ export function loadConfig(): GatewayConfig {
     dataDir,
     ownerApiKey,
     executeEnabled,
+    executionMaintenance,
+    stateWriteFreeze,
+    requireWriterLease,
+    gcsStateBucket,
+    gcsStateObject,
+    requireGcsState,
+    stateBackend,
     ownerPrivateKeyHex,
     network,
     requireOnChainGrant,

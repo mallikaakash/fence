@@ -38,6 +38,16 @@ describe("gateway HTTP", () => {
     delete process.env.INTENTGUARD_DATA_DIR;
     delete process.env.INTENTGUARD_OWNER_API_KEY;
     delete process.env.INTENTGUARD_PORT;
+    delete process.env.INTENTGUARD_EXECUTION_MAINTENANCE;
+  });
+
+  it("GET /health includes executionMaintenance boolean", async () => {
+    const base = `http://127.0.0.1:${port}`;
+    const res = await fetch(`${base}/health`);
+    assert.equal(res.status, 200);
+    const body = (await res.json()) as { executionMaintenance?: boolean };
+    assert.equal(typeof body.executionMaintenance, "boolean");
+    assert.equal(body.executionMaintenance, false);
   });
 
   it("creates session and denies oversize propose", async () => {

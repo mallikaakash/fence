@@ -16,6 +16,7 @@
     "grant:instructions": "node --experimental-strip-types src/cli/grant-instructions.ts",
     "security:verify": "node --experimental-strip-types src/cli/security-verify.ts",
     "e2e:protocol": "node --experimental-strip-types src/cli/e2e-protocol.ts",
+    "e2e:protocol:live": "INTENTGUARD_E2E_LIVE=1 node --experimental-strip-types src/cli/e2e-protocol.ts",
     "gtm:verify": "node --experimental-strip-types src/cli/gtm-verify.ts",
     "platform:verify": "node --experimental-strip-types src/cli/platform-verify.ts",
     "ux:verify": "node --experimental-strip-types src/cli/ux-verify.ts",
@@ -39,10 +40,11 @@
     "zod": "^3.24.2"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@google-cloud/storage": "^7.22.0",
     "@injectivelabs/core-proto-ts-v2": "^1.20.5",
     "@injectivelabs/networks": "^1.20.66",
     "@injectivelabs/sdk-ts": "^1.20.66",
-    "@injectivelabs/ts-types": "^1.20.66"
+    "@injectivelabs/ts-types": "^1.20.66",
+    "@modelcontextprotocol/sdk": "^1.29.0"
   }
 }

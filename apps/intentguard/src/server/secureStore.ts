@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import type { GatewaySession } from "../gateway/session.ts";
 import type { AuditEvent } from "../gateway/audit.ts";
+import type { ExecuteIdempotencyRecord, TradeProposal } from "../execution/types.ts";
 import { writeJsonAtomic } from "./persist.ts";
 import { decryptSecret, encryptSecret } from "./crypto.ts";
 import { sealAuditLog, verifyAuditSeal } from "./auth.ts";
@@ -17,6 +18,16 @@ export type PersistedStateV2 = {
   updatedAt: string;
   sessions: StoredSession[];
   audit: AuditEvent[];
+  auditSeal?: string;
+};
+
+export type PersistedStateV3 = {
+  version: 3;
+  updatedAt: string;
+  sessions: StoredSession[];
+  audit: AuditEvent[];
+  proposals?: TradeProposal[];
+  executeIdempotency?: ExecuteIdempotencyRecord[];
   auditSeal?: string;
 };
 
@@ -59,11 +70,17 @@ export class SecureFileStore {
     return { ...stored, granteePrivateKeyHex: hex };
   }
 
-  load(): { sessions: GatewaySession[]; audit: AuditEvent[] } {
+  load(): {
+    sessions: GatewaySession[];
+    audit: AuditEvent[];
+    proposals: TradeProposal[];
+    executeIdempotency: ExecuteIdempotencyRecord[];
+  } {
     if (!existsSync(this.path)) {
-      return { sessions: [], audit: [] };
+      return { sessions: [], audit: [], proposals: [], executeIdempotency: [] };
     }
     const raw = JSON.parse(readFileSync(this.path, "utf8")) as
+      | PersistedStateV3
       | PersistedStateV2
       | {
           version: 1;
@@ -76,6 +93,12 @@ export class SecureFileStore {
       this.#fromStored(s),
     );
     const audit = raw.audit ?? [];
+    const proposals =
+      "proposals" in raw && Array.isArray(raw.proposals) ? raw.proposals : [];
+    const executeIdempotency =
+      "executeIdempotency" in raw && Array.isArray(raw.executeIdempotency)
+        ? raw.executeIdempotency
+        : [];
 
     if (this.dataKey && raw.auditSeal) {
       const json = JSON.stringify(audit);
@@ -84,17 +107,26 @@ export class SecureFileStore {
       }
     }
 
-    return { sessions, audit };
+    return { sessions, audit, proposals, executeIdempotency };
   }
 
-  save(sessions: GatewaySession[], audit: AuditEvent[]): void {
+  save(
+    sessions: GatewaySession[],
+    audit: AuditEvent[],
+    execution?: {
+      proposals: TradeProposal[];
+      executeIdempotency: ExecuteIdempotencyRecord[];
+    },
+  ): void {
     const stored = sessions.map((s) => this.#toStored(s));
     const auditJson = JSON.stringify(audit);
-    const state: PersistedStateV2 = {
-      version: 2,
+    const state: PersistedStateV3 = {
+      version: 3,
       updatedAt: new Date().toISOString(),
       sessions: stored,
       audit,
+      proposals: execution?.proposals ?? [],
+      executeIdempotency: execution?.executeIdempotency ?? [],
       auditSeal: this.dataKey
         ? sealAuditLog(auditJson, this.dataKey)
         : undefined,

@@ -33,6 +33,16 @@ export function createBankApi() {
   return new ChainGrpcBankApi(spikeEndpoints().grpc);
 }
 
+/** Network-selected bank API (readiness / explicit network queries). */
+export function createBankApiForNetwork(network: "testnet" | "mainnet") {
+  const ep = getNetworkEndpoints(networkFromEnv(network));
+  return new ChainGrpcBankApi(ep.grpc);
+}
+
+export function indexerEndpointForNetwork(network: "testnet" | "mainnet"): string {
+  return getNetworkEndpoints(networkFromEnv(network)).indexer;
+}
+
 export function createAuthZApi() {
   return new ChainGrpcAuthZApi(spikeEndpoints().grpc);
 }
