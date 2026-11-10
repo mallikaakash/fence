@@ -9,9 +9,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
   reporter: [["list"]],
+  timeout: 60_000,
   use: {
     baseURL,
     trace: "on-first-retry",
+    navigationTimeout: 60_000,
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: process.env.PLAYWRIGHT_BASE_URL

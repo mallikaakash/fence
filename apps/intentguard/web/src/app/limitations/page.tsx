@@ -10,22 +10,22 @@ export default function LimitationsPage() {
   return (
     <AppShell>
       <InnerPage
-        title="How it works"
-        subtitle="IntentGuard sits between your AI and Injective: policy checks first, then optional live trades on testnet."
+        title="How it works & limits"
+        subtitle="IntentGuard checks every trade against your rules on Injective testnet before it can reach the exchange."
       >
         <div className="space-y-6">
           <ol className="text-white/75 text-sm space-y-3 list-decimal list-inside">
             <li>
-              <strong className="text-white">Protect</strong> — you sign typed AuthZ in Keplr with
-              market and size limits.
+              <strong className="text-white">Set up</strong> — choose markets and size limits, then
+              approve a timed permission in Keplr.
             </li>
             <li>
-              <strong className="text-white">Gateway</strong> — every agent intent is allow/deny before
-              MsgExec.
+              <strong className="text-white">Check</strong> — each bot or AI request is allowed or
+              blocked against your rules first.
             </li>
             <li>
-              <strong className="text-white">Revoke</strong> — turn off protection or wait for grant
-              expiry; assistant keys never go to the agent app.
+              <strong className="text-white">Control</strong> — revoke in Keplr or end your session;
+              your bot only gets a limited access code, not your seed phrase.
             </li>
           </ol>
           <RelatedProductsCallout />
@@ -36,7 +36,7 @@ export default function LimitationsPage() {
             href="/start"
             className="inline-flex px-5 py-2.5 bg-orange-400 text-black rounded-full text-sm font-medium"
           >
-            Start protecting
+            Start setup
           </Link>
           <p className="text-white/40 text-xs">
             Technical limitations:{" "}

@@ -8,11 +8,13 @@ export function GrantBroadcastButton({
   grantTxPlanJson,
   network = "testnet",
   onSuccess,
+  actionLabel = "Approve permission in Keplr",
 }: {
   ownerInjectiveAddress: string;
   grantTxPlanJson: string;
   network?: "testnet" | "mainnet";
   onSuccess?: (txHash: string) => void;
+  actionLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<string | null>(null);
@@ -57,10 +59,11 @@ export function GrantBroadcastButton({
         className="px-3 py-1.5 rounded-full border border-[#75bfcf]/50 text-[#75bfcf] text-xs hover:bg-[#75bfcf]/10 disabled:opacity-50"
         onClick={() => void signAndBroadcast()}
       >
-        {busy ? "Signing…" : "Sign & broadcast MsgGrant (Keplr)"}
+        {busy ? "Opening Keplr…" : actionLabel}
       </button>
       <p className="text-[10px] text-white/45">
-        Requires funded {network} INJ in your wallet. Typed limit + cancel grants only.
+        Requires testnet INJ in your wallet for network fees. You approve limited derivative orders
+        and cancel permissions for the assistant wallet — not full access to your funds.
       </p>
       {result && (
         <p className="text-xs text-[#75bfcf] break-all">Tx: {result}</p>

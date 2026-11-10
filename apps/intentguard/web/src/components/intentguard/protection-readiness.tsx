@@ -7,6 +7,7 @@ import {
   HELIX_TESTNET_URL,
 } from "@/lib/testnet-resources";
 import { gatewayGrantStatus, gatewayHealth } from "@/lib/gateway/client";
+import { parseGrantStatusJson } from "@/lib/grant-status";
 import { loadGatewaySettings } from "@/lib/gateway/storage";
 import { loadProtectionSummary, type ProtectionSummary } from "@/lib/protection-state";
 
@@ -15,11 +16,12 @@ type Step = {
   title: string;
   detail: string;
   done: boolean;
+  required: boolean;
   href?: string;
   hrefLabel?: string;
 };
 
-export function ProtectionReadiness() {
+export function ProtectionReadiness({ refreshKey = 0 }: { refreshKey?: number }) {
   const [steps, setSteps] = useState<Step[] | null>(null);
 
   useEffect(() => {
@@ -31,8 +33,10 @@ export function ProtectionReadiness() {
     }
 
     void (async () => {
-      let grantReady = Boolean(summary.grantReady);
+      let grantReady = false;
+      let grantDetail = "Approve the timed permission in Keplr — not active until confirmed.";
       let executeOn = false;
+      let serviceDetail = "Checking hosted service…";
 
       if (summary.sessionId && settings.agentApiToken) {
         const [grantRes, healthRes] = await Promise.all([
@@ -40,36 +44,46 @@ export function ProtectionReadiness() {
           gatewayHealth(settings),
         ]);
         if (grantRes.res.ok) {
-          grantReady = Boolean(
-            (grantRes.json as { grantStatus?: { ready?: boolean } }).grantStatus?.ready,
-          );
+          const parsed = parseGrantStatusJson(grantRes.json);
+          grantReady = parsed.ready;
+          if (parsed.userFacingIssues[0]) {
+            grantDetail = parsed.userFacingIssues[0];
+          } else if (grantReady) {
+            grantDetail = "Place and cancel permissions match your rules on-chain.";
+          }
+        } else {
+          grantDetail = "Could not verify wallet permission from the network.";
         }
         if (healthRes.res.ok) {
           executeOn = Boolean(
             (healthRes.json as { executeEnabled?: boolean }).executeEnabled,
           );
+          serviceDetail = executeOn
+            ? "Hosted service can submit allowed orders (execution still requires wallet permission)."
+            : "Execution is disabled on the server.";
+        } else {
+          serviceDetail = "Trading service unreachable — policy checks may still work offline.";
         }
       }
 
-      setSteps(buildSteps(summary, grantReady, executeOn));
+      const hasBotCode = Boolean(settings.agentApiToken?.startsWith("agt_"));
+      setSteps(
+        buildSteps(summary, grantReady, grantDetail, executeOn, serviceDetail, hasBotCode),
+      );
     })();
-  }, []);
+  }, [refreshKey]);
 
   if (!steps) return null;
 
-  const readyCount = steps.filter((s) => s.done).length;
-  const allDone = readyCount === steps.length;
+  const required = steps.filter((s) => s.required);
+  const readyCount = required.filter((s) => s.done).length;
 
   return (
     <div className="border border-white/15 rounded-xl p-4 bg-black/25 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-medium text-white/90">Getting ready to trade</h3>
-        <span
-          className={`text-xs px-2 py-0.5 rounded-full ${
-            allDone ? "bg-green-950/50 text-green-200" : "bg-amber-950/40 text-amber-100"
-          }`}
-        >
-          {allDone ? "Ready" : `${readyCount} of ${steps.length}`}
+        <span className="text-xs px-2 py-0.5 rounded-full bg-white/10 text-white/70">
+          {readyCount} of {required.length} verified
         </span>
       </div>
       <ol className="space-y-2">
@@ -87,24 +101,29 @@ export function ProtectionReadiness() {
               {s.done ? "✓" : "·"}
             </span>
             <div className="min-w-0">
-              <p className={s.done ? "text-white/75" : "text-white/90"}>{s.title}</p>
+              <p className={s.done ? "text-white/75" : "text-white/90"}>
+                {s.title}
+                {!s.required ? (
+                  <span className="text-white/40 text-[10px] ml-1">(your action)</span>
+                ) : null}
+              </p>
               <p className="text-xs text-white/45 mt-0.5">{s.detail}</p>
               {s.href && !s.done ? (
                 <Link href={s.href} className="text-xs text-[#75bfcf] underline mt-1 inline-block">
                   {s.hrefLabel ?? "Open"}
                 </Link>
               ) : null}
-              {s.id === "margin" && !s.done ? (
+              {s.id === "margin" ? (
                 <a
                   href={HELIX_TESTNET_URL}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-[#75bfcf] underline mt-1 inline-block mr-3"
+                  className="text-xs text-[#75bfcf] underline mt-1 inline-block"
                 >
-                  Helix testnet
+                  Open Helix testnet
                 </a>
               ) : null}
-              {s.id === "gas" && !s.done ? (
+              {s.id === "gas" ? (
                 <a
                   href={INJECTIVE_TESTNET_FAUCET_URL}
                   target="_blank"
@@ -125,7 +144,10 @@ export function ProtectionReadiness() {
 function buildSteps(
   summary: ProtectionSummary,
   grantReady: boolean,
+  grantDetail: string,
   executeOn: boolean,
+  serviceDetail: string,
+  hasBotCode: boolean,
 ): Step[] {
   const hasWallet = summary.ownerInj.startsWith("inj1");
   return [
@@ -136,39 +158,49 @@ function buildSteps(
         ? `Owner ${summary.ownerInj.slice(0, 12)}…`
         : "Connect Keplr on Injective testnet",
       done: hasWallet,
+      required: true,
       href: "/start",
       hrefLabel: "Continue setup",
     },
     {
       id: "rules",
-      title: "Trading limits signed in Keplr",
-      detail: grantReady
-        ? "On-chain permission matches your caps and expiry."
-        : "Approve the timed permission in your wallet.",
+      title: "Wallet permission approved",
+      detail: grantDetail,
       done: grantReady,
+      required: true,
       href: "/start",
       hrefLabel: "Finish approval",
     },
     {
       id: "service",
-      title: "Live trading service on",
-      detail: executeOn
-        ? "Orders can reach the exchange when within your rules."
-        : "Waiting for hosted service — try again shortly.",
+      title: "Trading service available",
+      detail: serviceDetail,
       done: executeOn,
+      required: true,
+    },
+    {
+      id: "bot",
+      title: "Bot access code issued",
+      detail: hasBotCode
+        ? "Copy from Connect a bot below."
+        : "Created when setup finishes — appears on this dashboard.",
+      done: hasBotCode,
+      required: true,
     },
     {
       id: "margin",
       title: "Margin on Helix (testnet)",
       detail:
-        "Deposit a small USDT balance on Helix with the same wallet — required before real fills.",
+        "Deposit USDT on Helix with the same wallet before real testnet fills.",
       done: false,
+      required: false,
     },
     {
       id: "gas",
       title: "INJ for network fees",
-      detail: "Keep a little INJ on your wallet (and assistant address if prompted).",
+      detail: "Keep testnet INJ on your wallet and assistant wallet if prompted.",
       done: false,
+      required: false,
     },
   ];
 }

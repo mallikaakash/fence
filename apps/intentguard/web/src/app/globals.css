@@ -231,7 +231,6 @@ body {
   }
   50% {
     box-shadow: 0 16px 48px rgba(117, 191, 207, 0.12);
-    transform: translateY(-2px);
   }
 }
 
@@ -303,6 +302,7 @@ body {
   content: "";
   position: absolute;
   inset: 0;
+  pointer-events: none;
   background: linear-gradient(
     105deg,
     transparent 40%,

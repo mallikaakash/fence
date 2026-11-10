@@ -6,7 +6,7 @@ export default function HistoryPage() {
   return (
     <AppShell>
       <InnerPage
-        title="Activity log"
+        title="Activity"
         subtitle="What was allowed, blocked, or sent to the exchange. Export for your records."
       >
         <div className="glass-card p-5 md:p-6">

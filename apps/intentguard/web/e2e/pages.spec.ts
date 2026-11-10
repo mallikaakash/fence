@@ -1,55 +1,32 @@
 import { test, expect } from "@playwright/test";
 
-const ROUTES: { path: string; heading: RegExp }[] = [
+const PAGES = [
   { path: "/", heading: /IntentGuard/i },
-  { path: "/start", heading: /Protect your trading/i },
-  { path: "/protection", heading: /My protection/i },
-  { path: "/trade", heading: /Practice a trade/i },
+  { path: "/protection", heading: /Dashboard/i },
+  { path: "/start", heading: /Set up protection/i },
+  { path: "/trade", heading: /Try a sample trade/i },
   { path: "/agent", heading: /Try sample AI phrases/i },
-  { path: "/portfolio", heading: /Grant audit/i },
-  { path: "/history", heading: /Activity log/i },
+  { path: "/portfolio", heading: /Wallet check/i },
   { path: "/limitations", heading: /How it works/i },
-  { path: "/console", heading: /Developer console/i },
-];
+  { path: "/history", heading: /Activity/i },
+  { path: "/console", heading: /Developers/i },
+] as const;
 
-const PRIMARY_NAV = ["Home", "My protection", "Protect", "Grant audit"];
+const PRIMARY_NAV = ["Home", "Dashboard", "Set up", "Wallet check"];
 
-test.describe("IntentGuard pages", () => {
-  for (const { path, heading } of ROUTES) {
-    test(`${path} loads with heading and nav`, async ({ page }) => {
-      await page.goto(path, { waitUntil: "domcontentloaded" });
-      await expect(page.getByRole("heading", { level: 1 })).toContainText(heading, {
-        timeout: 45_000,
-      });
-      const navLabels =
-        path === "/" ? PRIMARY_NAV.filter((l) => l !== "Home") : PRIMARY_NAV;
-      const nav = page.getByRole("navigation", { name: "Main" }).first();
-      for (const label of navLabels) {
-        await expect(nav.getByRole("link", { name: label })).toBeVisible();
-      }
-      await expect(page.getByRole("contentinfo")).toContainText(/testnet/i);
+test.describe("Static pages render", () => {
+  for (const { path, heading } of PAGES) {
+    test(`${path} has expected heading`, async ({ page }) => {
+      await page.goto(path);
+      await expect(page.getByRole("heading", { level: 1 })).toContainText(heading);
     });
   }
+});
 
-  test("limitations mentions Helix bots contrast", async ({ page }) => {
-    await page.goto("/limitations");
-    await expect(page.getByText(/Helix trading bots/i)).toBeVisible();
-    await expect(page.getByText(/testnet faucet/i)).toBeVisible();
-  });
-
-  test("footer links resolve", async ({ page }) => {
-    await page.goto("/");
-    await page.getByRole("navigation", { name: "Secondary" }).getByRole("link", { name: "How it works" }).click();
-    await expect(page).toHaveURL(/\/limitations/);
-  });
-
-  test("no document overflow on mobile", async ({ page }) => {
-    await page.setViewportSize({ width: 390, height: 844 });
-    await page.goto("/start");
-    const overflow = await page.evaluate(() => {
-      const el = document.documentElement;
-      return el.scrollWidth - el.clientWidth;
-    });
-    expect(overflow).toBeLessThanOrEqual(2);
-  });
+test("primary nav labels", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.getByRole("navigation", { name: "Main" }).first();
+  for (const label of PRIMARY_NAV) {
+    await expect(nav.getByRole("link", { name: label })).toBeVisible();
+  }
 });

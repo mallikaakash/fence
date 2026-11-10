@@ -31,7 +31,7 @@ export type ExecuteApiResponse = {
 };
 
 export const PROPOSE_AGENT_NOTE =
-  "Policy OK — call POST /v1/execute only after propose allowed and sidecar has INTENTGUARD_EXECUTE=1";
+  "Policy check only — does not verify wallet permission on-chain. Execution requires an active wallet grant and POST /v1/execute.";
 
 export function envelopePropose(
   inner: Record<string, unknown>,

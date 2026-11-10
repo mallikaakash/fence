@@ -206,7 +206,7 @@ export function PolicySimulator() {
             <p className="text-sm text-amber-200/90 border border-amber-400/25 rounded-xl px-4 py-3 bg-amber-950/20">
               You&apos;re seeing example caps — not your wallet yet. Finish{" "}
               <Link href="/start" className="text-[#75bfcf] underline font-medium">
-                Protect
+                Start setup
               </Link>{" "}
               to test against your real rules.
             </p>
@@ -232,7 +232,7 @@ export function PolicySimulator() {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-5 md:p-6 space-y-4">
             <h2 className="text-xl font-bold">
-              <span className="bg-[#75bfcf] px-2 text-black">Custom intent</span>
+              <span className="bg-[#75bfcf] px-2 text-black">Build sample order</span>
             </h2>
             {allowedMarkets.length > 1 ? (
               <label className="flex flex-col gap-1 text-sm">
@@ -256,12 +256,12 @@ export function PolicySimulator() {
               <Field label="Margin" value={margin} onChange={setMargin} />
               <Field label="Leverage" value={leverage} onChange={setLeverage} />
               {!sidecarReady ? (
-                <Field label="Max notional (offline)" value={maxNotional} onChange={setMaxNotional} />
+                <Field label="Max order size (preview)" value={maxNotional} onChange={setMaxNotional} />
               ) : (
                 <p className="col-span-2 text-white/50 text-xs">
                   Max order {maxNotional} from protection — change on{" "}
                   <Link href="/start" className="text-[#75bfcf] underline">
-                    Protect
+                    Set up
                   </Link>
                   .
                 </p>
@@ -273,13 +273,13 @@ export function PolicySimulator() {
               disabled={busy}
               onClick={runCustom}
             >
-              {busy ? "Evaluating…" : "Evaluate proposal"}
+              {busy ? "Checking…" : "Check if allowed"}
             </button>
           </div>
 
           <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-2xl shadow-2xl p-5 md:p-6 space-y-4">
             <h2 className="text-xl font-bold">
-              <span className="bg-[#75bfcf] px-2 text-black">Policy scenarios</span>
+              <span className="bg-[#75bfcf] px-2 text-black">Quick scenarios</span>
             </h2>
             <p className="text-sm text-white/70">
               Scenarios scale to your max order cap ({maxNotional}).
@@ -319,8 +319,18 @@ export function PolicySimulator() {
                 }`}
               >
                 <p className="font-semibold uppercase tracking-wide text-xs mb-1">
-                  {result.status ?? "error"}
+                  {sidecarReady ? "Policy check" : "Preview"}: {result.status ?? "error"}
                 </p>
+                {sidecarReady && result.status === "allowed" ? (
+                  <p className="text-white/55 text-xs mt-1">
+                    Rules satisfied — not execution. Wallet permission is required for real trades.
+                  </p>
+                ) : null}
+                {!sidecarReady && result.status === "allowed" ? (
+                  <p className="text-white/55 text-xs mt-1">
+                    Simulated caps only — no gateway session.
+                  </p>
+                ) : null}
                 {result.reasons?.map((r) => (
                   <p key={r} className="text-white/85">
                     {r}

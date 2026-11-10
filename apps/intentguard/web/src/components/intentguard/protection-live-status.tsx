@@ -8,10 +8,11 @@ import {
 } from "@/lib/gateway/client";
 import { loadGatewaySettings } from "@/lib/gateway/storage";
 import { loadProtectionSummary } from "@/lib/protection-state";
+import { parseGrantStatusJson } from "@/lib/grant-status";
 
 type Chip = { label: string; value: string; tone: "ok" | "warn" | "muted" };
 
-export function ProtectionLiveStatus() {
+export function ProtectionLiveStatus({ refreshKey = 0 }: { refreshKey?: number }) {
   const [chips, setChips] = useState<Chip[] | null>(null);
 
   useEffect(() => {
@@ -31,12 +32,22 @@ export function ProtectionLiveStatus() {
       ]);
 
       if (grantRes.res.ok) {
-        const ready = (grantRes.json as { grantStatus?: { ready?: boolean } }).grantStatus
-          ?.ready;
+        const parsed = parseGrantStatusJson(grantRes.json);
+        const value = parsed.ready
+          ? "active"
+          : parsed.limitReady || parsed.cancelReady
+            ? "incomplete"
+            : "pending";
         next.push({
           label: "Wallet permission",
-          value: ready ? "active" : "pending",
-          tone: ready ? "ok" : "warn",
+          value,
+          tone: parsed.ready ? "ok" : "warn",
+        });
+      } else {
+        next.push({
+          label: "Wallet permission",
+          value: "unverified",
+          tone: "warn",
         });
       }
 
@@ -64,9 +75,17 @@ export function ProtectionLiveStatus() {
         });
       }
 
+      if (!healthRes.res.ok) {
+        next.push({
+          label: "Trading service",
+          value: "unavailable",
+          tone: "warn",
+        });
+      }
+
       setChips(next.length ? next : null);
     })();
-  }, []);
+  }, [refreshKey]);
 
   if (!chips?.length) return null;
 

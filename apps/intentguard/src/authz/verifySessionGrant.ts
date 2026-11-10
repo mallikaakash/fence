@@ -1,21 +1,20 @@
 import { fetchGranterGrants } from "./fetchGrants.ts";
 import type { GatewaySession } from "../gateway/session.ts";
-import type { IntentGuardPolicy } from "../policy/types.ts";
-import {
-  LIMIT_AUTHZ,
-  marketIdsCoverPolicy,
-  subaccountsMatch,
-} from "./parseLcdAuthz.ts";
+import { LIMIT_AUTHZ } from "./parseLcdAuthz.ts";
+import { evaluateTypedGrantsForSession } from "./evaluateTypedGrants.ts";
 
 export type SessionGrantStatus = {
   granter: string;
   grantee: string;
   network: string;
-  /** Typed limit grant exists, not expired, markets + subaccount match session. */
+  /** Both typed limit + cancel grants match scope and are active. */
   ready: boolean;
+  limitReady: boolean;
+  cancelReady: boolean;
   scopeMatch: boolean;
   matchingGrants: number;
   issues: string[];
+  userFacingIssues: string[];
   endpoint: string;
   grantsSummary: Array<{
     authorizationType: string;
@@ -23,7 +22,6 @@ export type SessionGrantStatus = {
     subaccountId?: string;
     marketIds?: string[];
   }>;
-  /** On-chain limit-order scopes for this grantee (for owner UI). */
   onChainLimitScopes: Array<{
     subaccountId: string;
     marketIds: string[];
@@ -42,7 +40,7 @@ function sessionContext(session: Pick<GatewaySession, "policy" | "subaccountId">
 }
 
 /**
- * Read-only: on-chain typed limit grant for session grantee matches policy scope.
+ * Read-only: on-chain typed limit + cancel grants for session grantee match policy scope.
  */
 export async function verifySessionGrantOnChain(params: {
   session: Pick<
@@ -105,75 +103,38 @@ export async function verifySessionGrantOnChain(params: {
     issues.push(
       `no AuthZ grants from ${granter} to grantee ${grantee} — sign MsgGrant (GET /v1/sessions/…/grant-tx-plan)`,
     );
-  } else if (typedLimit.length === 0) {
+  } else if (typedLimit.length === 0 && forGrantee.length > 0) {
     issues.push(
       `grants exist for grantee but no CreateDerivativeLimitOrderAuthz — use typed grant plan, not GenericAuthorization`,
     );
   }
 
-  const expired = typedLimit.filter((g) => {
-    if (!g.expiration) return false;
-    const t = Date.parse(g.expiration);
-    return Number.isFinite(t) && t < Date.now();
+  const evaluated = evaluateTypedGrantsForSession({
+    grantsForGrantee: forGrantee,
+    expectedGrantee: grantee,
+    subaccountId: subaccountId!,
+    policyMarketIds: policyMarkets,
   });
 
-  let scopeMatch = false;
-  const activeLimit = typedLimit.filter((g) => {
-    if (!g.expiration) return true;
-    const t = Date.parse(g.expiration);
-    return !Number.isFinite(t) || t >= Date.now();
-  });
-
-  for (const g of typedLimit) {
-    if (!g.subaccountId || !g.marketIds?.length) {
-      issues.push(
-        "typed limit grant missing subaccount_id or market_ids in LCD — re-grant with IntentGuard plan",
-      );
-      continue;
-    }
-    if (!subaccountsMatch(g.subaccountId, subaccountId!)) {
-      issues.push(
-        `on-chain subaccount ${g.subaccountId} != session ${subaccountId}`,
-      );
-      continue;
-    }
-    if (!marketIdsCoverPolicy(g.marketIds, policyMarkets)) {
-      const missing = policyMarkets.filter(
-        (m) =>
-          !g.marketIds!.some(
-            (x) => x.toLowerCase() === m.toLowerCase(),
-          ),
-      );
-      issues.push(
-        `grant markets do not cover session policy markets: missing ${missing.join(", ")}`,
-      );
-      continue;
-    }
-    scopeMatch = true;
-    break;
-  }
-
-  if (typedLimit.length > 0 && !scopeMatch) {
-    issues.push("no limit grant matches session subaccount + marketIds");
-  }
-
-  if (scopeMatch && activeLimit.length === 0 && expired.length > 0) {
-    issues.push("typed limit grant expired — re-grant or extend expiry");
-  }
+  const allIssues = [...issues, ...evaluated.issues];
+  const scopeMatch = evaluated.limitReady || evaluated.cancelReady;
 
   const ready =
-    scopeMatch &&
-    activeLimit.length > 0 &&
-    !issues.some((i) => /no AuthZ|GenericAuthorization/i.test(i));
+    evaluated.ready &&
+    !params.session.revoked &&
+    !allIssues.some((i) => /GenericAuthorization/i.test(i));
 
   return {
     granter: granter!,
     grantee,
     network: fetched.network,
     ready,
+    limitReady: evaluated.limitReady && !params.session.revoked,
+    cancelReady: evaluated.cancelReady && !params.session.revoked,
     scopeMatch,
     matchingGrants: typedLimit.length,
-    issues,
+    issues: allIssues,
+    userFacingIssues: evaluated.userFacingIssues,
     endpoint: fetched.endpoint,
     grantsSummary: forGrantee.map((g) => ({
       authorizationType: g.authorizationType,
@@ -196,9 +157,14 @@ function emptyStatus(
     grantee,
     network,
     ready: false,
+    limitReady: false,
+    cancelReady: false,
     scopeMatch: false,
     matchingGrants: 0,
     issues,
+    userFacingIssues: issues.includes("session revoked")
+      ? ["Application session ended."]
+      : ["Wallet permission is not active yet."],
     endpoint: "",
     grantsSummary: [],
     onChainLimitScopes: [],

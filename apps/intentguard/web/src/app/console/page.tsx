@@ -1,17 +1,17 @@
 import { AppShell } from "@/components/layout/app-shell";
 import { InnerPage } from "@/components/layout/inner-page";
 import { AdvancedConsoleShell } from "@/components/intentguard/advanced-console-shell";
-import { AgentIntegrationPanel } from "@/components/intentguard/agent-integration-panel";
+import { DevelopersLandingCard } from "@/components/intentguard/developers-landing-card";
 
 export default function ConsolePage() {
   return (
     <AppShell>
       <InnerPage
-        title="Developer console"
-        subtitle="For integrators: raw gateway URL, API keys, sessions, and propose/execute probes. Everyday users should use Protect instead."
+        title="Developers — API & MCP"
+        subtitle="Integrations, curl, and operator probes. Connect bots on the Dashboard unless you are building an integration."
       >
         <div className="space-y-6">
-          <AgentIntegrationPanel />
+          <DevelopersLandingCard />
           <AdvancedConsoleShell />
         </div>
       </InnerPage>

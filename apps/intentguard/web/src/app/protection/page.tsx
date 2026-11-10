@@ -6,8 +6,8 @@ export default function ProtectionPage() {
   return (
     <AppShell>
       <InnerPage
-        title="My protection"
-        subtitle="See your limits, connect a bot, and review what was allowed or blocked."
+        title="Dashboard"
+        subtitle="Your limits, bot access code, readiness checklist, and recent activity."
       >
         <ProtectionHub />
       </InnerPage>

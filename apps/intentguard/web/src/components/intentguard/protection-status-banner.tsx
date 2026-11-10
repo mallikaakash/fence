@@ -28,14 +28,14 @@ export function ProtectionStatusBanner() {
         <span>
           Protection{" "}
           <strong className={summary.grantReady ? "text-green-300" : "text-amber-200"}>
-            {summary.grantReady ? "active" : "pending grant"}
+            {summary.grantReady ? "active" : "pending permission"}
           </strong>
           {" · "}
           {labels} · max order {summary.maxOrderNotional} · daily margin{" "}
           {summary.dailyMarginBudget}
         </span>
         <Link href="/protection" className="text-xs text-[#75bfcf] underline shrink-0">
-          Open dashboard
+          Dashboard
         </Link>
       </div>
       <ProtectionLiveStatus />

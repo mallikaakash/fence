@@ -104,6 +104,19 @@ export async function executeAgentIntent(params: {
     };
   }
 
+  if (
+    session.agentTokenExpiresAt &&
+    Date.now() >= Date.parse(session.agentTokenExpiresAt)
+  ) {
+    return {
+      status: "denied",
+      stage: "policy",
+      reasons: ["agent token expired — create a new session"],
+      signed: false,
+      broadcast: false,
+    };
+  }
+
   const subIndex = session.subaccountIndex ?? TRADING_SUBACCOUNT_INDEX;
   const subaccountId =
     session.subaccountId ??

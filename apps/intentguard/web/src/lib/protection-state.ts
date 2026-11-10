@@ -11,6 +11,8 @@ export type ProtectionSummary = {
   maxLeverage: number;
   grantExpirySeconds: number;
   grantReady?: boolean;
+  /** From session create response — bot access code lifetime (not on-chain grant expiry). */
+  agentTokenExpiresAt?: string;
   updatedAt: string;
 };
 

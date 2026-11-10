@@ -26,7 +26,7 @@ export function GrantRevokeButton({
     }
     if (
       !confirm(
-        "Revoke on-chain AuthZ for this grantee? This cannot be undone without a new MsgGrant.",
+        "Revoke wallet permission for this assistant key? You will need to set up protection again.",
       )
     ) {
       return;
@@ -56,7 +56,7 @@ export function GrantRevokeButton({
         className="text-xs text-red-300 border border-red-400/40 px-3 py-1 rounded-full hover:bg-red-950/30"
         onClick={() => void revoke()}
       >
-        {busy ? "Revoking…" : "Revoke on-chain AuthZ"}
+        {busy ? "Revoking…" : "Revoke wallet permission"}
       </button>
       {txHashes.map((h) => (
         <a

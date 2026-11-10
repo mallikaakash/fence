@@ -31,15 +31,14 @@ export function ExecuteReadinessPanel() {
   return (
     <div className="border border-white/10 rounded-xl p-4 bg-black/30 space-y-2 text-xs text-white/70">
       <p className="text-[#75bfcf] uppercase tracking-wide text-[10px]">
-        Execute readiness (testnet)
+        Trading service (testnet) — developer view
       </p>
       <ul className="space-y-1 list-disc list-inside">
         <li className={executeReady ? "text-green-300" : "text-amber-200"}>
-          Gateway execute: {executeReady ? "enabled" : "off (propose-only)"}
+          Live trading service: {executeReady ? "on" : "off"}
         </li>
-        <li>Owner typed MsgGrant on-chain (console → Check grant)</li>
-        <li>Funded subaccount margin on exchange (Helix testnet)</li>
-        <li>Hosted live trading uses your session keys — no export to the browser</li>
+        <li>Wallet permission must be active (check grant status in operator tools)</li>
+        <li>Helix testnet margin required for real fills</li>
       </ul>
       <TestnetResourcesCallout />
     </div>

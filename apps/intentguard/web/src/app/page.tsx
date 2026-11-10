@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
 import { HomeHeroIntro } from "@/components/intentguard/home-hero";
+import { HomePageActions, HomePrerequisites } from "@/components/intentguard/home-page-actions";
 import { HeroStagger } from "@/components/motion/hero-stagger";
 import { MotionReveal } from "@/components/motion/motion-reveal";
 
@@ -19,22 +20,12 @@ export default function Home() {
               <HomeHeroIntro />
             </div>
 
-            <div className="hero-stagger__item flex flex-col gap-4">
-              <div className="flex flex-wrap items-center gap-4">
-                <Link href="/start" className="cta-primary motion-cta">
-                  Protect my wallet
-                </Link>
-                <Link href="/limitations" className="cta-secondary motion-cta">
-                  How it works
-                </Link>
-              </div>
-              <p className="text-white/50 text-sm max-w-2xl">
-                Already protected? Open{" "}
-                <Link href="/protection" className="text-[#75bfcf] underline">
-                  My protection
-                </Link>{" "}
-                for status, bot setup, and recent activity.
-              </p>
+            <div className="hero-stagger__item">
+              <HomePrerequisites />
+            </div>
+
+            <div className="hero-stagger__item">
+              <HomePageActions />
             </div>
           </div>
         </HeroStagger>
@@ -44,37 +35,39 @@ export default function Home() {
         <div className="flex flex-col items-start max-w-5xl">
           <MotionReveal>
             <h2 className="text-3xl font-sans font-thin uppercase text-left mb-3 inline-block">
-              <span className="motion-title-chip bg-orange-400 px-2 text-black">Why this is different</span>
+              <span className="motion-title-chip bg-orange-400 px-2 text-black">Why this exists</span>
             </h2>
             <p className="text-white/55 text-sm max-w-2xl mb-8">
-              Not Helix grid bots — limits for bring-your-own AI on testnet.
+              Many AI tools ask for broad trading access. IntentGuard is for people who want{" "}
+              <strong className="text-white/75">bring-your-own bots</strong> on Injective with caps —
+              not another grid bot inside Helix.
             </p>
           </MotionReveal>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full">
             <FeatureCard
               delayMs={0}
               href="/start"
-              title="Protect"
-              body="Caps on size, markets, and daily margin before anything is broadcast."
+              title="Your rules"
+              body="Choose markets, max order size, daily margin limit, and leverage."
             />
             <FeatureCard
               delayMs={80}
               href="/start"
               title="Your wallet"
-              body="Typed grant in Keplr or Leap; revoke anytime. We never see your seed phrase."
+              body="Timed permission in Keplr or Leap — revoke anytime. We never see your seed phrase."
             />
             <FeatureCard
               delayMs={160}
               href="/protection"
               title="Your bot"
-              body="Copy a bot access code after setup — not your seed phrase."
+              body="Copy a bot access code on the dashboard — not unlimited wallet control."
             />
           </div>
           <MotionReveal delayMs={100}>
             <p className="text-white/50 text-sm mt-8 max-w-2xl">
-              Caps are enforced by the gateway before broadcast.{" "}
+              Limits are checked before orders reach the exchange.{" "}
               <Link href="/limitations" className="text-[#75bfcf] underline">
-                How it works →
+                How it works & limits →
               </Link>
             </p>
           </MotionReveal>

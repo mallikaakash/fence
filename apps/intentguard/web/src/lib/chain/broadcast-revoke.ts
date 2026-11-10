@@ -24,6 +24,16 @@ const DEFAULT_REVOKE_TYPES = [
   "/injective.exchange.v1beta1.MsgCancelDerivativeOrder",
 ];
 
+export class RevokeBroadcastError extends Error {
+  readonly txHashes: string[];
+
+  constructor(message: string, txHashes: string[]) {
+    super(message);
+    this.name = "RevokeBroadcastError";
+    this.txHashes = txHashes;
+  }
+}
+
 type InjWindow = Window & {
   keplr?: {
     enable: (chainId: string) => Promise<void>;
@@ -70,43 +80,56 @@ export async function broadcastTypedRevokes(params: {
   const txHashes: string[] = [];
   let sequence = baseAccount.sequence;
 
-  for (const messageType of params.messageTypes ?? DEFAULT_REVOKE_TYPES) {
-    const msg = MsgRevoke.fromJSON({
-      granter: params.granter,
-      grantee: params.grantee,
-      messageType,
-    });
+  const types = params.messageTypes ?? DEFAULT_REVOKE_TYPES;
 
-    const { signDoc } = createTransaction({
-      pubKey,
-      chainId,
-      fee: getStdFee({}),
-      message: msg,
-      sequence,
-      timeoutHeight: timeoutHeight.toNumber(),
-      accountNumber: baseAccount.accountNumber,
-    });
+  try {
+    for (const messageType of types) {
+      const msg = MsgRevoke.fromJSON({
+        granter: params.granter,
+        grantee: params.grantee,
+        messageType,
+      });
 
-    const directSignResponse = await offlineSigner.signDirect(
-      params.granter,
-      signDoc,
-    );
-    const txRaw = getTxRawFromTxRawOrDirectSignResponse(
-      directSignResponse as Parameters<typeof getTxRawFromTxRawOrDirectSignResponse>[0],
-    );
+      const { signDoc } = createTransaction({
+        pubKey,
+        chainId,
+        fee: getStdFee({}),
+        message: msg,
+        sequence,
+        timeoutHeight: timeoutHeight.toNumber(),
+        accountNumber: baseAccount.accountNumber,
+      });
 
-    const broadcastResult = await w.keplr.sendTx(
-      chainId,
-      encodeTxRawForKeplr(txRaw),
-      BroadcastModeKeplr.Sync,
-    );
-    if (!broadcastResult?.length) {
-      throw new Error(`Broadcast failed for ${messageType}`);
+      const directSignResponse = await offlineSigner.signDirect(
+        params.granter,
+        signDoc,
+      );
+      const txRaw = getTxRawFromTxRawOrDirectSignResponse(
+        directSignResponse as Parameters<typeof getTxRawFromTxRawOrDirectSignResponse>[0],
+      );
+
+      const broadcastResult = await w.keplr.sendTx(
+        chainId,
+        encodeTxRawForKeplr(txRaw),
+        BroadcastModeKeplr.Sync,
+      );
+      if (!broadcastResult?.length) {
+        throw new Error(`Broadcast failed for ${messageType}`);
+      }
+      const txHash = Buffer.from(broadcastResult).toString("hex");
+      await new TxRestApi(networkInfo.rest).fetchTxPoll({ txHash });
+      txHashes.push(txHash);
+      sequence += 1;
     }
-    const txHash = Buffer.from(broadcastResult).toString("hex");
-    await new TxRestApi(networkInfo.rest).fetchTxPoll({ txHash });
-    txHashes.push(txHash);
-    sequence += 1;
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    if (txHashes.length > 0) {
+      throw new RevokeBroadcastError(
+        `Revoke incomplete (${txHashes.length}/${types.length} transactions). ${msg}`,
+        txHashes,
+      );
+    }
+    throw e;
   }
 
   return { txHashes };

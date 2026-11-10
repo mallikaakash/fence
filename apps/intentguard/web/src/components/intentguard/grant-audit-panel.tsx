@@ -37,10 +37,10 @@ export function GrantAuditPanel() {
   return (
     <div className="space-y-4 text-white">
       <p className="text-sm text-white/70">
-        Queries Injective testnet for AuthZ grants and highlights risky generic permissions. To create
-        or revoke protection, use{" "}
+        Checks Injective testnet for wallet permissions granted to other keys and flags overly broad
+        access. To set up or remove protection, use{" "}
         <a href="/start" className="text-[#75bfcf] underline">
-          Protect
+          Set up
         </a>
         .
       </p>
@@ -48,7 +48,7 @@ export function GrantAuditPanel() {
       <OwnerWalletConnect network="testnet" onAddress={setGranter} />
       <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center">
         <input
-          aria-label="granter address"
+          aria-label="Your wallet address"
           className="flex-1 min-h-[42px] bg-black/40 border border-white/30 rounded-md px-3 py-2 text-sm font-mono"
           value={granter}
           onChange={(e) => setGranter(e.target.value)}

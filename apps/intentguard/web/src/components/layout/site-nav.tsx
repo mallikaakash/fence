@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { NAV } from "@/lib/product-copy";
 
 const LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/protection", label: "My protection" },
-  { href: "/start", label: "Protect" },
-  { href: "/portfolio", label: "Grant audit" },
+  { href: "/", label: NAV.home },
+  { href: "/protection", label: NAV.dashboard },
+  { href: "/start", label: NAV.setup },
+  { href: "/portfolio", label: NAV.walletCheck },
 ] as const;
 
 export function SiteNav() {
@@ -23,7 +24,7 @@ export function SiteNav() {
       >
         <div className="motion-nav__pill backdrop-blur-sm bg-white/5 border border-white/10 rounded-full shadow-2xl px-10 py-4">
           <div className="flex items-center justify-center space-x-10">
-            {LINKS.filter((item) => !(item.href === "/" && pathname === "/")).map((item) => {
+            {LINKS.map((item) => {
               const active =
                 item.href === "/"
                   ? pathname === "/"

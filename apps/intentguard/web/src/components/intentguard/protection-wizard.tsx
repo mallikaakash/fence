@@ -17,7 +17,6 @@ import {
   gatewayGrantStatus,
   gatewayGrantTxPlan,
   gatewayHealth,
-  gatewayRevokeSession,
 } from "@/lib/gateway/client";
 import {
   loadGatewaySettings,
@@ -27,12 +26,12 @@ import {
 import { fetchHostedStatus } from "@/lib/hosted";
 import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
 import { GrantBroadcastButton } from "@/components/intentguard/grant-broadcast-button";
-import { GrantRevokeButton } from "@/components/intentguard/grant-revoke-button";
+import { TurnOffProtectionPanel } from "@/components/intentguard/turn-off-protection-panel";
+import { parseGrantStatusJson } from "@/lib/grant-status";
 import { broadcastSendInj } from "@/lib/chain/broadcast-send-inj";
 import { formatExecuteFeedback } from "@/lib/gateway/execute-messages";
 import { ProtectionLiveStatus } from "@/components/intentguard/protection-live-status";
 import {
-  clearProtectionSummary,
   loadProtectionSummary,
   POLICY_PRESETS,
   saveProtectionSummary,
@@ -40,16 +39,25 @@ import {
   loadWalletPreset,
   type PolicyPresetId,
 } from "@/lib/protection-state";
+import { SETUP_STEPS } from "@/lib/product-copy";
 
-type WizardStep = "intro" | "connect" | "limits" | "sign" | "done";
+export type WizardStep = "intro" | "connect" | "limits" | "sign" | "done";
 
 const GRANT_EXPIRY_OPTIONS: { label: string; seconds: number }[] = [
   { label: "24 hours", seconds: 86_400 },
   { label: "7 days", seconds: 604_800 },
 ];
 
-export function ProtectionWizard() {
-  const [step, setStep] = useState<WizardStep>("intro");
+export function ProtectionWizard({
+  onStepChange,
+}: {
+  onStepChange?: (step: WizardStep) => void;
+}) {
+  const [step, setStepState] = useState<WizardStep>("intro");
+  const setStep = (next: WizardStep) => {
+    setStepState(next);
+    onStepChange?.(next);
+  };
   const [settings, setSettings] = useState<GatewaySettings>({
     baseUrl: "",
     ownerApiKey: "",
@@ -78,6 +86,7 @@ export function ProtectionWizard() {
       sessionId: string;
       granteeInj: string;
       grantReady?: boolean;
+      agentTokenExpiresAt?: string;
     }) => {
       saveProtectionSummary({
         sessionId: partial.sessionId,
@@ -89,6 +98,7 @@ export function ProtectionWizard() {
         maxLeverage: Number(maxLeverage),
         grantExpirySeconds,
         grantReady: partial.grantReady,
+        agentTokenExpiresAt: partial.agentTokenExpiresAt,
         updatedAt: new Date().toISOString(),
       });
     },
@@ -127,7 +137,7 @@ export function ProtectionWizard() {
 
       const { res, json } = await gatewayGrantStatus(merged, sid);
       if (!res.ok) return;
-      const gs = (json as { grantStatus: { ready: boolean } }).grantStatus;
+      const gs = parseGrantStatusJson(json);
       setGrantReady(gs.ready);
       setStep(gs.ready ? "done" : "sign");
       if (gs.ready) {
@@ -176,7 +186,7 @@ export function ProtectionWizard() {
     if (!sessionId) return;
     const { res, json } = await gatewayGrantStatus(settings, sessionId);
     if (!res.ok) return;
-    const gs = (json as { grantStatus: { ready: boolean } }).grantStatus;
+    const gs = parseGrantStatusJson(json);
     setGrantReady(gs.ready);
     if (granteeInj) {
       persistSummary({ sessionId, granteeInj, grantReady: gs.ready });
@@ -250,16 +260,19 @@ export function ProtectionWizard() {
       }
       const raw = json as {
         agentApiToken: string;
+        agentTokenExpiresAt?: string;
         session: { sessionId: string; granteeAddress: string };
       };
       persist({ agentApiToken: raw.agentApiToken });
       setSessionId(raw.session.sessionId);
       setGranteeInj(raw.session.granteeAddress);
-      persistSummary({
+      const summaryBase = {
         sessionId: raw.session.sessionId,
         granteeInj: raw.session.granteeAddress,
         grantReady: false,
-      });
+        agentTokenExpiresAt: raw.agentTokenExpiresAt,
+      };
+      persistSummary(summaryBase);
 
       const planRes = await gatewayGrantTxPlan(settings, raw.session.sessionId);
       if (planRes.res.ok) {
@@ -292,12 +305,7 @@ export function ProtectionWizard() {
     }
   }
 
-  async function afterOnChainRevoke() {
-    if (sessionId) {
-      await gatewayRevokeSession(settings, sessionId).catch(() => undefined);
-    }
-    clearProtectionSummary();
-    persist({ agentApiToken: "" });
+  function handleTurnOffComplete() {
     setRevoked(true);
     setSessionId(null);
     setGranteeInj(null);
@@ -323,16 +331,16 @@ export function ProtectionWizard() {
 
       {step === "intro" && (
         <>
-          <h2 className="text-lg text-white">AI trading power — not unlimited authority</h2>
+          <h2 className="text-lg text-white">Understand protection</h2>
           <div className="space-y-4 text-white/80 text-sm leading-relaxed">
             <p>
-              Choose markets, set caps (per order, daily margin, leverage), and sign one timed AuthZ
-              grant. IntentGuard runs every agent trade through your rules on Injective testnet before
-              it hits the exchange.
+              Unrestricted bot permissions can trade any size on any market. IntentGuard lets you cap
+              what an AI or bot can do on <strong className="text-white">Injective testnet</strong>{" "}
+              — every order is checked against your rules before it reaches the exchange.
             </p>
             <ul className="list-disc list-inside text-white/60 space-y-1 text-xs">
-              <li>You sign in Keplr — we never see your seed phrase.</li>
-              <li>Revoke anytime; grants expire automatically.</li>
+              <li>You approve a timed wallet permission in Keplr or Leap — we never see your seed phrase.</li>
+              <li>You can revoke anytime; permissions expire automatically.</li>
             </ul>
             {revoked && (
               <p className="text-green-300/90 text-xs">Protection turned off. Start again when ready.</p>
@@ -342,7 +350,7 @@ export function ProtectionWizard() {
               className="w-full md:w-auto px-6 py-3 rounded-md bg-orange-400 text-black font-medium"
               onClick={() => setStep("connect")}
             >
-              Start — about 3 minutes
+              Continue
             </button>
           </div>
         </>
@@ -379,7 +387,8 @@ export function ProtectionWizard() {
         <>
           <h2 className="text-lg text-white">Your trading limits</h2>
           <p className="text-white/55 text-xs">
-            Trades above max order notional or outside selected markets are blocked at the gateway.
+            Trades above your max order size or outside selected markets are blocked before they reach
+            the exchange.
           </p>
 
           <div className="mb-4">
@@ -426,7 +435,7 @@ export function ProtectionWizard() {
           </div>
 
           <LimitField
-            label="Max size per order (USDT notional cap)"
+            label="Max order size (USDT — price × quantity)"
             value={maxOrder}
             onChange={(v) => {
               setMaxOrder(v);
@@ -471,18 +480,34 @@ export function ProtectionWizard() {
             className="px-6 py-2 rounded-full bg-orange-400 text-black disabled:opacity-40"
             onClick={() => void activateProtection()}
           >
-            {busy ? "Creating…" : "Create protection"}
+            {busy ? "Saving…" : "Save and continue"}
           </button>
         </>
       )}
 
       {step === "sign" && (
         <>
-          <h2 className="text-lg text-white">Approve in Keplr</h2>
-          <p className="text-white/70 text-sm">
-            Limited trading on <strong>{marketLabels}</strong> — expires in{" "}
-            {grantExpirySeconds === 604_800 ? "7 days" : "24 hours"}.
-          </p>
+          <h2 className="text-lg text-white">Approve permissions</h2>
+          <div className="text-white/75 text-sm space-y-2 border border-white/15 rounded-lg p-3 bg-black/25">
+            <p className="text-xs uppercase tracking-wide text-[#75bfcf]">You are approving</p>
+            <p>
+              A dedicated <strong>assistant wallet</strong> may place{" "}
+              <strong>limited derivative orders</strong> and <strong>cancel orders</strong> on your
+              behalf for: <strong>{marketLabels}</strong>.
+            </p>
+            <ul className="text-xs text-white/60 list-disc list-inside space-y-0.5">
+              <li>Max order size: {maxOrder} USDT (price × quantity)</li>
+              <li>Daily margin limit: {dailyBudget}</li>
+              <li>Max leverage: {maxLeverage}×</li>
+              <li>
+                Expires: {grantExpirySeconds === 604_800 ? "7 days" : "24 hours"}
+              </li>
+            </ul>
+            <p className="text-[11px] text-white/45">
+              IntentGuard still checks every trade against these caps before anything is sent to the
+              exchange. Permission is not active until Keplr confirms on-chain.
+            </p>
+          </div>
           {grantTxJson && ownerInj && (
             <GrantBroadcastButton
               ownerInjectiveAddress={ownerInj}
@@ -492,25 +517,44 @@ export function ProtectionWizard() {
             />
           )}
           <p className="text-xs text-white/50">
-            Status:{" "}
+            Wallet permission:{" "}
             <span className={grantReady ? "text-green-300" : "text-amber-200"}>
-              {grantReady ? "Protection active on-chain" : "Waiting for Keplr…"}
+              {grantReady ? "Active on-chain" : "Waiting for Keplr approval"}
             </span>
           </p>
+          {grantReady ? (
+            <button
+              type="button"
+              className="px-6 py-2 rounded-full bg-[#75bfcf] text-black text-sm font-medium"
+              onClick={() => setStep("done")}
+            >
+              Continue
+            </button>
+          ) : null}
         </>
       )}
 
       {step === "done" && (
         <>
-          <h2 className="text-lg text-green-300">You&apos;re protected</h2>
+          <h2
+            className={`text-lg ${grantReady ? "text-green-300" : "text-amber-200"}`}
+          >
+            {grantReady ? "Confirmation — protection active" : "Confirmation — finish wallet approval"}
+          </h2>
           <p className="text-white/80 text-sm">
-            Active on {marketLabels}. Max order {maxOrder}, daily margin {dailyBudget}, leverage ≤{" "}
-            {maxLeverage}.
+            Rules saved for {marketLabels}. Max order {maxOrder}, daily margin limit {dailyBudget},
+            leverage ≤ {maxLeverage}.
+            {!grantReady ? (
+              <>
+                {" "}
+                Return to the previous step if Keplr approval is still pending.
+              </>
+            ) : null}
           </p>
           <ProtectionLiveStatus />
           <ol className="text-white/60 text-xs list-decimal list-inside space-y-2 border border-white/10 rounded-lg p-3">
             <li>
-              Send assistant gas (Keplr, ~0.2 INJ) —{" "}
+              Send testnet INJ to assistant wallet (~0.2 INJ) —{" "}
               <button
                 type="button"
                 disabled={busy || !granteeInj}
@@ -568,7 +612,7 @@ export function ProtectionWizard() {
               href="/protection"
               className="px-5 py-2 rounded-full bg-[#75bfcf] text-black text-sm font-medium"
             >
-              Open My protection
+              Go to dashboard
             </Link>
             <Link
               href="/trade"
@@ -577,14 +621,24 @@ export function ProtectionWizard() {
               Practice a trade
             </Link>
           </div>
-          {ownerInj && granteeInj && (
+          {ownerInj && granteeInj && sessionId && (
             <div className="border border-red-400/25 rounded-lg p-3 space-y-2">
               <p className="text-white/60 text-xs">Turn off protection</p>
-              <GrantRevokeButton
-                granter={ownerInj}
-                grantee={granteeInj}
-                network="testnet"
-                onSuccess={() => void afterOnChainRevoke()}
+              <TurnOffProtectionPanel
+                compact
+                summary={{
+                  sessionId,
+                  ownerInj,
+                  granteeInj,
+                  marketIds: selectedMarkets,
+                  maxOrderNotional: maxOrder,
+                  dailyMarginBudget: dailyBudget,
+                  maxLeverage: Number(maxLeverage),
+                  grantExpirySeconds,
+                  grantReady,
+                  updatedAt: new Date().toISOString(),
+                }}
+                onComplete={handleTurnOffComplete}
               />
             </div>
           )}
@@ -605,7 +659,7 @@ function StepBar({ step }: { step: WizardStep }) {
   const idx = order.indexOf(step);
   return (
     <div className="flex gap-2 flex-wrap">
-      {["Learn", "Wallet", "Limits", "Approve", "Done"].map((label, i) => (
+      {SETUP_STEPS.map((label, i) => (
         <span
           key={label}
           className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${
