@@ -200,13 +200,20 @@ export function PolicySimulator() {
 
   return (
     <div className="space-y-6 text-white">
-        {!sidecarReady && (
-          <p className="text-sm text-amber-200/90 border border-amber-400/25 rounded-xl px-4 py-3 bg-amber-950/20">
-            Finish{" "}
-            <Link href="/start" className="text-[#75bfcf] underline font-medium">
-              Protect
-            </Link>{" "}
-            for live gateway checks (offline mirror still works below).
+        {!sidecarReady ? (
+          <div className="space-y-2">
+            <p className="text-xs uppercase tracking-wide text-amber-200/80">Preview mode</p>
+            <p className="text-sm text-amber-200/90 border border-amber-400/25 rounded-xl px-4 py-3 bg-amber-950/20">
+              You&apos;re seeing example caps — not your wallet yet. Finish{" "}
+              <Link href="/start" className="text-[#75bfcf] underline font-medium">
+                Protect
+              </Link>{" "}
+              to test against your real rules.
+            </p>
+          </div>
+        ) : (
+          <p className="text-xs text-green-200/90 border border-green-400/25 rounded-xl px-4 py-2 bg-green-950/20">
+            Using your protection session — results match what a bot would see.
           </p>
         )}
 

@@ -28,7 +28,7 @@ export function EnvironmentRibbon() {
       <div className="fixed top-0 inset-x-0 z-[60] bg-[#0d3d4a]/95 border-b border-[#75bfcf]/40 text-[#c8ecf4] text-xs text-center py-1.5 px-3">
         {onConsole
           ? "Injective testnet only — console proxies to the gateway."
-          : "Injective testnet only — protect, test limits, and audit grants in the browser."}
+          : "Injective testnet preview — set protection, connect a bot, and trade within your rules."}
       </div>
     );
   }

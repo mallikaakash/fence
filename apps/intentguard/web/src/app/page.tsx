@@ -29,19 +29,11 @@ export default function Home() {
                 </Link>
               </div>
               <p className="text-white/50 text-sm max-w-2xl">
-                Already set up? Use the menu for{" "}
-                <Link href="/trade" className="text-[#75bfcf] underline">
-                  Try limits
-                </Link>
-                ,{" "}
-                <Link href="/agent" className="text-[#75bfcf] underline">
-                  Demo agent
-                </Link>
-                , or{" "}
-                <Link href="/portfolio" className="text-[#75bfcf] underline">
-                  Grant audit
-                </Link>
-                .
+                Already protected? Open{" "}
+                <Link href="/protection" className="text-[#75bfcf] underline">
+                  My protection
+                </Link>{" "}
+                for status, bot setup, and recent activity.
               </p>
             </div>
           </div>
@@ -73,9 +65,9 @@ export default function Home() {
             />
             <FeatureCard
               delayMs={160}
-              href="/agent"
-              title="Your agent"
-              body="Same allow/deny engine for demo phrases and real agt_… bots."
+              href="/protection"
+              title="Your bot"
+              body="Copy a bot access code after setup — not your seed phrase."
             />
           </div>
           <MotionReveal delayMs={100}>

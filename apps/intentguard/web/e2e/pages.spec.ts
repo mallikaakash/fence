@@ -3,15 +3,16 @@ import { test, expect } from "@playwright/test";
 const ROUTES: { path: string; heading: RegExp }[] = [
   { path: "/", heading: /IntentGuard/i },
   { path: "/start", heading: /Protect your trading/i },
-  { path: "/trade", heading: /Try your limits/i },
-  { path: "/agent", heading: /Demo agent/i },
+  { path: "/protection", heading: /My protection/i },
+  { path: "/trade", heading: /Practice a trade/i },
+  { path: "/agent", heading: /Try sample AI phrases/i },
   { path: "/portfolio", heading: /Grant audit/i },
   { path: "/history", heading: /Activity log/i },
   { path: "/limitations", heading: /How it works/i },
   { path: "/console", heading: /Developer console/i },
 ];
 
-const PRIMARY_NAV = ["Home", "Protect", "Try limits", "Demo agent", "Grant audit"];
+const PRIMARY_NAV = ["Home", "My protection", "Protect", "Grant audit"];
 
 test.describe("IntentGuard pages", () => {
   for (const { path, heading } of ROUTES) {

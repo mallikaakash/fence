@@ -34,8 +34,8 @@ export function ProtectionStatusBanner() {
           {labels} · max order {summary.maxOrderNotional} · daily margin{" "}
           {summary.dailyMarginBudget}
         </span>
-        <Link href="/start" className="text-xs text-[#75bfcf] underline shrink-0">
-          Manage
+        <Link href="/protection" className="text-xs text-[#75bfcf] underline shrink-0">
+          Open dashboard
         </Link>
       </div>
       <ProtectionLiveStatus />

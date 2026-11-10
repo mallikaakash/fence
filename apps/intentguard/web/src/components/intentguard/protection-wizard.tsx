@@ -565,19 +565,16 @@ export function ProtectionWizard() {
           )}
           <div className="flex flex-wrap gap-3">
             <Link
-              href="/trade"
+              href="/protection"
               className="px-5 py-2 rounded-full bg-[#75bfcf] text-black text-sm font-medium"
             >
-              Try your limits
+              Open My protection
             </Link>
             <Link
-              href="/agent"
+              href="/trade"
               className="px-5 py-2 rounded-full border border-white/30 text-white text-sm"
             >
-              Demo agent
-            </Link>
-            <Link href="/portfolio" className="px-5 py-2 rounded-full border border-white/30 text-white text-sm">
-              Scan risky grants
+              Practice a trade
             </Link>
           </div>
           {ownerInj && granteeInj && (

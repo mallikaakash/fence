@@ -7,7 +7,7 @@ export default function HistoryPage() {
     <AppShell>
       <InnerPage
         title="Activity log"
-        subtitle="Allow, deny, and execute events from your gateway session. Export JSON or CSV for review."
+        subtitle="What was allowed, blocked, or sent to the exchange. Export for your records."
       >
         <div className="glass-card p-5 md:p-6">
           <LiveActivityPanel />

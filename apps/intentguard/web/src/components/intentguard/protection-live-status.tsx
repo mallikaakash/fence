@@ -34,7 +34,7 @@ export function ProtectionLiveStatus() {
         const ready = (grantRes.json as { grantStatus?: { ready?: boolean } }).grantStatus
           ?.ready;
         next.push({
-          label: "On-chain grant",
+          label: "Wallet permission",
           value: ready ? "active" : "pending",
           tone: ready ? "ok" : "warn",
         });
@@ -45,7 +45,7 @@ export function ProtectionLiveStatus() {
           (healthRes.json as { executeEnabled?: boolean }).executeEnabled,
         );
         next.push({
-          label: "Live execute",
+          label: "Live trading",
           value: exec ? "on" : "off",
           tone: exec ? "ok" : "warn",
         });

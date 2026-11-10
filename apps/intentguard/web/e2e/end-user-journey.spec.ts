@@ -25,15 +25,10 @@ test.describe("End user — first visit", () => {
     await page
       .getByRole("navigation", { name: "Main" })
       .first()
-      .getByRole("link", { name: "Try limits" })
+      .getByRole("link", { name: "My protection" })
       .click();
-    await expect(page).toHaveURL(/\/trade/);
-    await page
-      .getByRole("navigation", { name: "Main" })
-      .first()
-      .getByRole("link", { name: "Demo agent" })
-      .click();
-    await expect(page).toHaveURL(/\/agent/);
+    await expect(page).toHaveURL(/\/protection/);
+    await expect(page.getByText(/No protection set up yet/i)).toBeVisible();
     await page
       .getByRole("navigation", { name: "Main" })
       .first()
@@ -51,9 +46,7 @@ test.describe("End user — first visit", () => {
 
   test("trade and agent gate users without a session", async ({ page }) => {
     await page.goto("/trade");
-    await expect(
-      page.getByText("for live gateway checks (offline mirror still works below)."),
-    ).toBeVisible();
+    await expect(page.getByText(/Preview mode/i)).toBeVisible();
     await expect(page.getByRole("button", { name: "Evaluate proposal" })).toBeVisible();
     await page.goto("/agent");
     await expect(page.getByText(/Complete[\s\S]*Protect first/i)).toBeVisible();
@@ -94,7 +87,7 @@ test.describe("End user — hosted wiring", () => {
 });
 
 test.describe("End user — layout quality", () => {
-  for (const path of ["/", "/start", "/trade", "/portfolio"]) {
+  for (const path of ["/", "/start", "/protection", "/trade", "/portfolio"]) {
     test(`no horizontal scroll on ${path}`, async ({ page }) => {
       await page.setViewportSize({ width: 1280, height: 800 });
       await page.goto(path, { waitUntil: "networkidle" });

@@ -7,8 +7,8 @@ export default function TradePage() {
   return (
     <AppShell>
       <InnerPage
-        title="Try your limits"
-        subtitle="Send sample trades through your protection session. Finish Protect first for live gateway checks."
+        title="Practice a trade"
+        subtitle="See if a sample order would be allowed or blocked. Set up Protect first to use your real limits."
       >
         <div className="space-y-5 mb-6">
           <ProtectionStatusBanner />

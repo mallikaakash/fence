@@ -8,9 +8,16 @@ export function SiteFooter() {
     >
       <div className="max-w-5xl flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
         <p>
-          Injective testnet — demo funds only. Typed AuthZ policy layer. Not investment advice.
+          Injective testnet — preview only. Limits enforced before orders reach the exchange. Not
+          investment advice.
         </p>
         <nav className="flex flex-wrap gap-4" aria-label="Secondary">
+          <Link href="/trade" className="hover:text-white/75">
+            Practice trades
+          </Link>
+          <Link href="/agent" className="hover:text-white/75">
+            Try sample AI phrases
+          </Link>
           <Link href="/history" className="hover:text-white/75">
             Activity log
           </Link>

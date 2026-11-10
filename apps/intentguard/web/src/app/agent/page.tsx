@@ -6,8 +6,8 @@ export default function AgentPage() {
   return (
     <AppShell>
       <InnerPage
-        title="Demo agent"
-        subtitle="Tap a phrase — the same policy engine a real bot uses will allow or deny it."
+        title="Try sample AI phrases"
+        subtitle="Optional preview — tap a phrase to see allow or deny. Finish Protect to use your real limits."
       >
         <AgentDemo />
       </InnerPage>
