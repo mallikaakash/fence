@@ -2,6 +2,8 @@
 Fence is the guardrail for your AI agents on [Injective](https://injective.com). Fence checks every trade intent against limits you set in your wallet before anything can execute on Helix.
 **Network:** Injective **testnet** (not mainnet).
 
+Web app Link: https://fence-2lcs3sivbq-uc.a.run.app 
+
 ---
 ## What it does
 Helix holds margin and matches trades. **Fence sits in front of your AI agent** and enforces your rules on every request.
