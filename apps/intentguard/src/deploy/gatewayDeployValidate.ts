@@ -19,7 +19,7 @@ const GATEWAY_SERVICE_PATTERNS = [
 
 export function isGatewayGcloudBlock(block: string): boolean {
   if (!/gcloud\s+run\s+(deploy|services\s+update)/.test(block)) return false;
-  if (/intentguard-web/.test(block) && !GATEWAY_SERVICE_PATTERNS.some((p) => p.test(block))) {
+  if (/(?:intentguard-web|\$WEB_SERVICE|fence)/.test(block) && !GATEWAY_SERVICE_PATTERNS.some((p) => p.test(block))) {
     return false;
   }
   return GATEWAY_SERVICE_PATTERNS.some((p) => p.test(block));

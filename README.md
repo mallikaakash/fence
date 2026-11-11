@@ -53,7 +53,7 @@ Trading MCP can sign transactions. Keep wallets off the machine until you delibe
 | Pasteable machine bootstrap | [prompts/claude-injective-bootstrap.md](./prompts/claude-injective-bootstrap.md) |
 | Demo Day runbook | [docs/DEMO.md](./docs/DEMO.md), live web [DEMO-WEB.md](./docs/DEMO-WEB.md) |
 | Pitch (slide parity) | [docs/PITCH.md](./docs/PITCH.md) |
-| Hosted testnet app | https://intentguard-web-2lcs3sivbq-uc.a.run.app |
+| Hosted testnet app | https://fence-2lcs3sivbq-uc.a.run.app |
 | Fence web UI | `npm run intentguard:web` → [apps/intentguard/web](./apps/intentguard/web) — `/start`, `/portfolio`, `/console` |
 | Fence product docs | [docs/PRODUCT.md](./docs/PRODUCT.md), [docs/BRANDING.md](./docs/BRANDING.md) |
 | Release verify | `smoke` … `legal` (all `*:verify` in apps/intentguard) — [LIMITATIONS](./docs/LIMITATIONS.md) |

@@ -4,7 +4,7 @@ set -euo pipefail
 
 PROJECT_ID="${GCP_PROJECT_ID:-project-bf77a013-c0b3-413c-a75}"
 REGION="${GCP_REGION:-us-central1}"
-WEB_SERVICE="${INTENTGUARD_WEB_SERVICE:-intentguard-web}"
+WEB_SERVICE="${INTENTGUARD_WEB_SERVICE:-fence}"
 
 WEB_URL="${INTENTGUARD_WEB_URL:-}"
 if [[ -z "$WEB_URL" ]]; then

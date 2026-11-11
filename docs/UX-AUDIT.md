@@ -12,7 +12,7 @@ npm run test:e2e
 Optional hosted smoke:
 
 ```bash
-PLAYWRIGHT_BASE_URL=https://intentguard-web-2lcs3sivbq-uc.a.run.app npm run test:e2e
+PLAYWRIGHT_BASE_URL=https://fence-2lcs3sivbq-uc.a.run.app npm run test:e2e
 ```
 
 Covers: all 8 routes, shared nav/footer, mobile horizontal overflow on `/start`.

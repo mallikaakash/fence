@@ -1,6 +1,6 @@
 # IntentGuard hosted — operator runbook
 
-Testnet only. GCP services: `intentguard-web`, `intentguard-gateway`.
+Testnet only. GCP services: `fence` (web), `intentguard-gateway`.
 
 ## Deploy
 

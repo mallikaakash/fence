@@ -9,7 +9,7 @@
     "lint": "eslint",
     "test:unit": "node --experimental-strip-types --test 'src/lib/**/*.test.ts' 'src/lib/**/**/*.test.ts' 'src/lib/**/**/**/*.test.ts'",
     "test:e2e": "playwright test",
-    "test:e2e:hosted": "PLAYWRIGHT_BASE_URL=https://intentguard-web-2lcs3sivbq-uc.a.run.app playwright test",
+    "test:e2e:hosted": "PLAYWRIGHT_BASE_URL=https://fence-2lcs3sivbq-uc.a.run.app playwright test",
     "test:e2e:ui": "playwright test --ui",
     "sync:core": "node ./scripts/sync-core.mjs",
     "deploy": "vercel deploy --prod"

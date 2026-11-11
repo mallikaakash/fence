@@ -1,6 +1,6 @@
 # IntentGuard — pitch (matches live testnet product)
 
-Use this for slides, demo day, or README hero. **Live app:** https://intentguard-web-2lcs3sivbq-uc.a.run.app  
+Use this for slides, demo day, or README hero. **Live app:** https://fence-2lcs3sivbq-uc.a.run.app  
 **Rehearse:** [DEMO-WEB.md](./DEMO-WEB.md) · **Integrators:** [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md)
 
 ---

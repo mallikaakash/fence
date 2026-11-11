@@ -16,7 +16,7 @@ PROJECT_ID="${GCP_PROJECT_ID:-$(gcloud config get-value project 2>/dev/null)}"
 REGION="${GCP_REGION:-us-central1}"
 BUCKET="${INTENTGUARD_GCS_BUCKET:-intentguard-state-${PROJECT_ID}}"
 GW_SERVICE="${INTENTGUARD_GW_SERVICE:-intentguard-gateway}"
-WEB_SERVICE="${INTENTGUARD_WEB_SERVICE:-intentguard-web}"
+WEB_SERVICE="${INTENTGUARD_WEB_SERVICE:-fence}"
 
 if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "(unset)" ]]; then
   echo "Set GCP_PROJECT_ID or: gcloud config set project YOUR_PROJECT" >&2
@@ -76,6 +76,7 @@ case "$DEPLOY_TARGET" in
     intentguard_deploy_web_service
     intentguard_discover_web_url
     echo "Web URL: $WEB_URL"
+    intentguard_update_gateway_cors
     ;;
 esac
 

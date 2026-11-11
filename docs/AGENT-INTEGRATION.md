@@ -14,14 +14,14 @@ Hummingbot-style typed grants are the low-level building block; IntentGuard adds
 
 ## Path A — Hosted (recommended for demo)
 
-1. **Protect** on the web app: [Protect](https://intentguard-web-2lcs3sivbq-uc.a.run.app/start) → Keplr grant → **Done**.
+1. **Protect** on the web app: [Protect](https://fence-2lcs3sivbq-uc.a.run.app/start) → Keplr grant → **Done**.
 2. Browser stores `agt_…` and session id in localStorage (same origin).
 3. Call the **browser proxy** (no raw gateway URL in the agent if you run tools from the user's machine with cookies — for server agents use Path B).
 
 Proxy base (hosted):
 
 ```text
-https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway
+https://fence-2lcs3sivbq-uc.a.run.app/api/gateway
 ```
 
 ## Path B — Your agent calls the gateway directly
@@ -97,7 +97,7 @@ HTTP `429` with `retryAfterSeconds`.
 Set in MCP env (never commit tokens):
 
 ```json
-"INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway",
+"INTENTGUARD_GATEWAY_URL": "https://fence-2lcs3sivbq-uc.a.run.app/api/gateway",
 "INTENTGUARD_AGENT_TOKEN": "agt_…"
 ```
 

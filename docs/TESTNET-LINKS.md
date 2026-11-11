@@ -9,7 +9,7 @@ Canonical constants: `apps/intentguard/web/src/lib/testnet-resources.ts`.
 | Helix mainnet trading bots (contrast) | https://helixapp.com/trading-bots | `/limitations` related products |
 | Injective testnet faucet | https://testnet.faucet.injective.network/ | Protect resources, GO-LIVE |
 | Google Cloud Injective faucet | https://cloud.google.com/application/web3/faucet/injective/testnet | Protect resources, GO-LIVE, spike CLI hints |
-| Hosted web | https://intentguard-web-2lcs3sivbq-uc.a.run.app | All user docs |
+| Hosted web | https://fence-2lcs3sivbq-uc.a.run.app | All user docs |
 | Explorer (testnet tx) | https://testnet.explorer.injective.network/transaction | `web/src/lib/explorer.ts` |
 
 ## Checklist (maintenance)

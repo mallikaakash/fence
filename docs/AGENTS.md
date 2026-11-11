@@ -105,7 +105,7 @@ Examples: `apps/intentguard/examples/` (`agent-bot.mjs`, `agent-curl.sh`).
 ```json
 "intentguard-agent": {
   "env": {
-    "INTENTGUARD_GATEWAY_URL": "https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway",
+    "INTENTGUARD_GATEWAY_URL": "https://fence-2lcs3sivbq-uc.a.run.app/api/gateway",
     "INTENTGUARD_AGENT_TOKEN": "agt_…"
   }
 }

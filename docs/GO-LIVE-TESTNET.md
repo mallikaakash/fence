@@ -35,7 +35,7 @@ If `intentguard-owner-private-key` exists in Secret Manager, it is mounted **opt
 Verify:
 
 ```bash
-curl -sS https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway/health | jq '{executeEnabled, executionMaintenance}'
+curl -sS https://fence-2lcs3sivbq-uc.a.run.app/api/gateway/health | jq '{executeEnabled, executionMaintenance}'
 ```
 
 After redeploying the latest gateway image, expect **`executionMaintenance`** in health (boolean). Older revisions may omit it until redeployed.

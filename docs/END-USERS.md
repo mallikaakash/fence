@@ -6,10 +6,10 @@ You do **not** need GCP, terminal, or manual `agt_` tokens when you use the host
 
 ## What you get
 
-1. **Protect** ([/start](https://intentguard-web-2lcs3sivbq-uc.a.run.app/start)) — pick markets, set caps, approve a **timed** typed grant in Keplr.
-2. **Try limits** ([/trade](https://intentguard-web-2lcs3sivbq-uc.a.run.app/trade)) — see allow/deny against your real session policy.
-3. **Demo agent** ([/agent](https://intentguard-web-2lcs3sivbq-uc.a.run.app/agent)) — tap sample “AI” phrases; same policy engine as a real bot.
-4. **Grant audit** ([/portfolio](https://intentguard-web-2lcs3sivbq-uc.a.run.app/portfolio)) — scan your wallet for risky AuthZ grants.
+1. **Protect** ([/start](https://fence-2lcs3sivbq-uc.a.run.app/start)) — pick markets, set caps, approve a **timed** typed grant in Keplr.
+2. **Try limits** ([/trade](https://fence-2lcs3sivbq-uc.a.run.app/trade)) — see allow/deny against your real session policy.
+3. **Demo agent** ([/agent](https://fence-2lcs3sivbq-uc.a.run.app/agent)) — tap sample “AI” phrases; same policy engine as a real bot.
+4. **Grant audit** ([/portfolio](https://fence-2lcs3sivbq-uc.a.run.app/portfolio)) — scan your wallet for risky AuthZ grants.
 
 ## Live trading on testnet (after Protect)
 
@@ -27,15 +27,15 @@ If a trade fails, the app shows a **plain hint** (gas, margin, or grant) instead
 
 ## Connect an AI agent or script
 
-After **Protect**, open [/console](https://intentguard-web-2lcs3sivbq-uc.a.run.app/console) → **Connect your agent** (copy `agt_…` + sample `curl`). Full guide: [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md).
+After **Protect**, open [/console](https://fence-2lcs3sivbq-uc.a.run.app/console) → **Connect your agent** (copy `agt_…` + sample `curl`). Full guide: [AGENT-INTEGRATION.md](./AGENT-INTEGRATION.md).
 
 ## What still needs Advanced console
 
 | Goal | Where |
 |------|--------|
-| Owner sessions / probes | Rest of [/console](https://intentguard-web-2lcs3sivbq-uc.a.run.app/console) |
+| Owner sessions / probes | Rest of [/console](https://fence-2lcs3sivbq-uc.a.run.app/console) |
 | Operator key rotation | Server-side only (not exposed in the browser) |
 
 ## Honest limit
 
-Notional caps are enforced by IntentGuard’s gateway before MsgExec, not inside every Injective smart contract. You trust this app the way you trust any trading frontend — with an audit trail on [/history](https://intentguard-web-2lcs3sivbq-uc.a.run.app/history).
+Notional caps are enforced by IntentGuard’s gateway before MsgExec, not inside every Injective smart contract. You trust this app the way you trust any trading frontend — with an audit trail on [/history](https://fence-2lcs3sivbq-uc.a.run.app/history).

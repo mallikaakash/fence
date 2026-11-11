@@ -5,7 +5,7 @@ Replaces **Vercel (web)** + **Railway (gateway)** with two **Cloud Run** service
 | Service | Image | Ingress | Persistence |
 |---------|--------|---------|-------------|
 | `intentguard-gateway` | `apps/intentguard/Dockerfile` | Public HTTPS (API keys) | **Authoritative `state.json`** via GCS JSON API; **FUSE mount** at `/data/.intentguard` for `config.json` and local aux files only |
-| `intentguard-web` | `apps/intentguard/web/Dockerfile` | Public HTTPS | Stateless |
+| `fence` (`INTENTGUARD_WEB_SERVICE`, default `fence`) | `apps/intentguard/web/Dockerfile` | Public HTTPS | Stateless |
 
 Cloud Run listens on **`PORT`** (default 8080). The gateway reads `PORT` automatically (`config.ts`).
 
@@ -128,7 +128,7 @@ Open `https://YOUR-WEB-URL.run.app/console` (proxy default when env is set).
 ## Custom domain
 
 ```bash
-gcloud run domain-mappings create --service intentguard-web --domain console.yourdomain.com --region $GCP_REGION
+gcloud run domain-mappings create --service fence --domain console.yourdomain.com --region $GCP_REGION
 ```
 
 Map DNS per gcloud instructions. Add the web URL to gateway `INTENTGUARD_CORS_ORIGINS`.
@@ -136,7 +136,7 @@ Map DNS per gcloud instructions. Add the web URL to gateway `INTENTGUARD_CORS_OR
 ## Migrating off Vercel
 
 1. Deploy GCP (above)
-2. Point users to the `intentguard-web` Cloud Run URL
+2. Point users to the `fence` Cloud Run URL
 3. Remove or archive the Vercel project when satisfied
 
 ## Cost (rough)

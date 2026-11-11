@@ -1,6 +1,6 @@
 # Live web demo (~3 minutes)
 
-**URL:** https://intentguard-web-2lcs3sivbq-uc.a.run.app  
+**URL:** https://fence-2lcs3sivbq-uc.a.run.app  
 **Network:** Injective testnet only.
 
 ## Preflight (do before presenting)
@@ -15,7 +15,7 @@
 Hosted health:
 
 ```bash
-curl -sS https://intentguard-web-2lcs3sivbq-uc.a.run.app/api/gateway/health
+curl -sS https://fence-2lcs3sivbq-uc.a.run.app/api/gateway/health
 ```
 
 Expect `network: "testnet"`, `executeEnabled: true`.

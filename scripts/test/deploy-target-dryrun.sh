@@ -78,10 +78,7 @@ for target in full gateway web; do
       echo "web target must not deploy gateway" >&2
       exit 1
     fi
-    if echo "$OUT" | rg -q "INTENTGUARD_CORS_ORIGINS"; then
-      echo "web target must not update gateway CORS" >&2
-      exit 1
-    fi
+    echo "$OUT" | rg -q "INTENTGUARD_CORS_ORIGINS"
     if [[ -f "$IG/.env.deploy" ]]; then
       echo "web-only must not rewrite .env.deploy" >&2
       exit 1
