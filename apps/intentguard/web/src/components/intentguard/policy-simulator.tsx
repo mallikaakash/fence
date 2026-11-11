@@ -48,6 +48,7 @@ export function PolicySimulator() {
   const [sidecarReady, setSidecarReady] = useState(false);
   const [executeEnabled, setExecuteEnabled] = useState(false);
   const [lastIntent, setLastIntent] = useState<Record<string, unknown> | null>(null);
+  const [lastProposalId, setLastProposalId] = useState<string | null>(null);
   const [executeResult, setExecuteResult] = useState<string | null>(null);
 
   const allowedMarkets = useMemo(() => {
@@ -90,6 +91,8 @@ export function PolicySimulator() {
     if (sidecarReady) {
       const s = loadGatewaySettings();
       const { res, json } = await gatewayPropose(s, intent);
+      const proposalId = (json as { proposalId?: string }).proposalId ?? null;
+      setLastProposalId(proposalId);
       return {
         ok: res.ok,
         status: (json as { status?: string }).status as "allowed" | "denied",
@@ -178,12 +181,16 @@ export function PolicySimulator() {
   }
 
   async function runExecute() {
-    if (!lastIntent) return;
+    if (!lastIntent || !lastProposalId) return;
     setBusy(true);
     setExecuteResult(null);
     try {
       const s = loadGatewaySettings();
-      const { res, json } = await gatewayExecute(s, lastIntent);
+      const { res, json } = await gatewayExecute(
+        s,
+        { intent: lastIntent, proposalId: lastProposalId },
+        `sim-${lastProposalId}`,
+      );
       setExecuteResult(
         res.ok
           ? formatExecuteFeedback(json, res.status)

@@ -38,16 +38,26 @@ export function createGatewayClient(opts: GatewayClientOptions) {
         asAgent: true,
         idempotencyKey: extra?.idempotencyKey,
       }),
-    execute: (intent: unknown) =>
+    execute: (
+      body: { intent: unknown; proposalId: string },
+      extra?: { idempotencyKey?: string },
+    ) =>
       request(opts, "/v1/execute", {
         method: "POST",
-        body: JSON.stringify({ intent }),
+        body: JSON.stringify(body),
         asAgent: true,
+        idempotencyKey: extra?.idempotencyKey,
       }),
     grantStatus: (sessionId: string) =>
       request(opts, `/v1/sessions/${sessionId}/grant-status`, {
         method: "GET",
       }),
+    sessionReadiness: (sessionId: string, marketId?: string) => {
+      const q = marketId ? `?marketId=${encodeURIComponent(marketId)}` : "";
+      return request(opts, `/v1/sessions/${sessionId}/readiness${q}`, {
+        method: "GET",
+      });
+    },
     createSession: (body: unknown) =>
       request(opts, "/v1/sessions", {
         method: "POST",

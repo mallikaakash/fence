@@ -104,12 +104,17 @@ server.tool(
 
 server.tool(
   "intentguard_agent_execute",
-  "POST /v1/execute — broadcast MsgExec after allow. Requires gateway execute + on-chain grant.",
-  { intent: intentSchema },
-  async ({ intent }) => {
+  "POST /v1/execute — requires proposalId from propose, Idempotency-Key header, gateway execute + on-chain grant.",
+  {
+    intent: intentSchema,
+    proposalId: z.string(),
+    idempotencyKey: z.string(),
+  },
+  async ({ intent, proposalId, idempotencyKey }) => {
     const result = await gatewayFetch("/v1/execute", {
       method: "POST",
-      body: JSON.stringify({ intent: intent as TradeIntent }),
+      body: JSON.stringify({ intent: intent as TradeIntent, proposalId }),
+      idempotencyKey,
     });
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],

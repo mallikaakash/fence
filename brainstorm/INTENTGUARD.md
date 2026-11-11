@@ -1,4 +1,6 @@
-# IntentGuard — product + architecture (diligence-aligned)
+# Fence (IntentGuard spec) — product + architecture (diligence-aligned)
+
+**Product name:** **Fence** · **Repo / deploy codename:** IntentGuard (`apps/intentguard/`, `INTENTGUARD_*` env).
 
 **One-liner:** Injective-native execution policy for AI trading agents — typed exchange AuthZ + isolated signing + order economics, so an agent can propose trades without receiving authority to execute outside its mandate.
 

@@ -1,0 +1,24 @@
+# Cloud Build / `gcloud run deploy --source` context — keep secrets and local artifacts out.
+.git/
+.gitignore
+.DS_Store
+*.log
+
+# Secrets and local env (deploy script writes .env.deploy at deploy time — never upload)
+.env
+.env.*
+.env.deploy
+.env.local
+.env.agent
+
+# Local state and spike material
+.intentguard/
+.spike/
+
+# Dependencies and build output (rebuilt in Dockerfile / Cloud Build)
+node_modules/
+web/node_modules/
+web/.next/
+.next/
+dist/
+coverage/

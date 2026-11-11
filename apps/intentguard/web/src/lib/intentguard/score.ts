@@ -60,7 +60,7 @@ export function scoreGrants(
         findings.push({
           severity: "medium",
           code: "typed_authz_no_notional",
-          message: `Typed AuthZ still has no max notional/leverage — IntentGuard gateway must enforce order economics`,
+          message: `Typed AuthZ still has no max notional/leverage — Fence gateway must enforce order economics`,
         });
         score -= 5;
       }

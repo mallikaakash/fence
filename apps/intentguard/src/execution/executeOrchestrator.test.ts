@@ -295,4 +295,43 @@ describe("executeOrchestrator", () => {
     assert.equal(out.httpStatus, 410);
     assert.equal(out.body.errorCode, "proposal_expired");
   });
+
+  it("blocks broadcast when execute readiness gate fails", async () => {
+    const { gateway, safety, agent, proposal, lock } = setup();
+    const out = await orchestrateAgentExecute({
+      agentApiToken: agent.apiToken,
+      idempotencyKeyRaw: "readiness-gate",
+      proposalId: proposal.proposalId,
+      intent,
+      deps: {
+        gateway,
+        safety,
+        audit: gateway.audit,
+        lock,
+        config: {
+          executeEnabled: true,
+          requireOnChainGrant: false,
+          requireExecuteReadiness: true,
+          network: "testnet",
+        },
+        executeReadinessGate: async () => ({
+          ok: false,
+          errorCode: "execute_readiness_not_ready",
+          message: "Subaccount needs USDC",
+          overallStatus: "action_required",
+          blockers: ["subaccountCollateral: needs USDC"],
+        }),
+        runChainExecute: (async () => ({
+          status: "allowed" as const,
+          stage: "broadcast" as const,
+          reasons: [],
+          signed: true,
+          broadcast: true,
+          txHash: "0x",
+        })) as unknown as MockExec,
+      },
+    });
+    assert.equal(out.httpStatus, 403);
+    assert.equal(out.body.errorCode, "execute_readiness_not_ready");
+  });
 });

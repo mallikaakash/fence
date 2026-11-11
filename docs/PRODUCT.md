@@ -1,4 +1,6 @@
-# IntentGuard — product architecture
+# Fence — product architecture
+
+> **Fence** is the customer-facing name. Repo paths, Cloud Run services (`intentguard-*`), and `INTENTGUARD_*` env vars remain for deployment compatibility.
 
 ## Deployment model (recommended)
 

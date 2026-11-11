@@ -6,7 +6,6 @@ import {
   gatewayAuditEvents,
   gatewayCreateSession,
   gatewayGrantStatus,
-  gatewayGrantTxPlan,
   gatewayHealth,
   gatewayListSessions,
   gatewayExecute,
@@ -25,16 +24,24 @@ import {
   GatewayConnectionWarnings,
   GatewayNetworkChip,
   GatewaySecretsPanel,
-  GrantTxPlanPanel,
 } from "@/components/intentguard/gateway-ux";
 import { ExecuteReadinessPanel } from "@/components/intentguard/execute-readiness";
-import { GrantBroadcastButton } from "@/components/intentguard/grant-broadcast-button";
+import { GrantApprovalPanel } from "@/components/intentguard/grant-approval-panel";
 import { GrantRevokeButton } from "@/components/intentguard/grant-revoke-button";
 import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
 
 type SessionView = {
   sessionId: string;
   granteeAddress: string;
+  ownerInjectiveAddress?: string;
+  subaccountId?: string;
+  policy?: {
+    marketIds: string[];
+    maxMarginPerOrder: string;
+    maxOrderNotional?: string;
+    maxLeverage: number;
+    dailyMarginBudget: string;
+  };
   revoked: boolean;
   policyEnglish: string;
   dailyMarginUsed: string;
@@ -98,7 +105,6 @@ export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
     Record<string, { ready: boolean; scopeMatch: boolean; issues: string[] }>
   >({});
   const [ownerInj, setOwnerInj] = useState("");
-  const [grantTxPlanById, setGrantTxPlanById] = useState<Record<string, string>>({});
 
   useEffect(() => {
     setSettings(loadGatewaySettings());
@@ -233,23 +239,6 @@ export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
     }
   }
 
-  async function loadGrantTxPlan(sessionId: string) {
-    setBusy(true);
-    try {
-      const { res, json } = await gatewayGrantTxPlan(settings, sessionId);
-      if (res.ok) {
-        setGrantTxPlanById((prev) => ({
-          ...prev,
-          [sessionId]: JSON.stringify(json, null, 2),
-        }));
-      } else {
-        alert(JSON.stringify(json));
-      }
-    } finally {
-      setBusy(false);
-    }
-  }
-
   function useLocalSidecar() {
     persist({ baseUrl: "http://127.0.0.1:8787" });
   }
@@ -359,7 +348,17 @@ export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
     setExecuteResult(null);
     const intent = sampleIntent("ok");
     try {
-      const { res, json } = await gatewayExecute(settings, intent);
+      const prop = await gatewayPropose(settings, intent);
+      const proposalId = (prop.json as { proposalId?: string }).proposalId;
+      if (!prop.res.ok || !proposalId) {
+        setExecuteResult(`${prop.res.status} ${JSON.stringify(prop.json)}`);
+        return;
+      }
+      const { res, json } = await gatewayExecute(
+        settings,
+        { intent, proposalId },
+        `owner-console-${proposalId}`,
+      );
       setExecuteResult(`${res.status} ${JSON.stringify(json)}`);
     } catch (e) {
       setExecuteResult(e instanceof Error ? e.message : String(e));
@@ -544,28 +543,30 @@ export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
                 >
                   On-chain:{" "}
                   {grantStatusById[s.sessionId].ready
-                    ? "ready"
+                    ? "ready (see Trade for execute readiness)"
                     : grantStatusById[s.sessionId].scopeMatch
                       ? "scope OK (check expiry)"
                       : "pending"}
                 </span>
               )}
-              {grantTxPlanById[s.sessionId] && (
-                <>
-                  <GrantTxPlanPanel
-                    json={grantTxPlanById[s.sessionId]}
-                    onCopy={() =>
-                      void navigator.clipboard.writeText(grantTxPlanById[s.sessionId])
-                    }
-                  />
-                  <GrantBroadcastButton
-                    ownerInjectiveAddress={ownerInj}
-                    grantTxPlanJson={grantTxPlanById[s.sessionId]}
+              {!s.revoked &&
+                s.ownerInjectiveAddress &&
+                s.subaccountId &&
+                s.policy && (
+                  <GrantApprovalPanel
+                    settings={settings}
+                    connectedWallet={ownerInj}
                     network={healthInfo?.network === "mainnet" ? "mainnet" : "testnet"}
-                    onSuccess={() => void checkGrant(s.sessionId)}
+                    session={{
+                      sessionId: s.sessionId,
+                      ownerInjectiveAddress: s.ownerInjectiveAddress,
+                      granteeAddress: s.granteeAddress,
+                      subaccountId: s.subaccountId,
+                      policy: s.policy,
+                      revoked: s.revoked,
+                    }}
                   />
-                </>
-              )}
+                )}
               {!s.revoked && (
                 <>
                   <button
@@ -574,13 +575,6 @@ export function OwnerConsole({ embedded = false }: { embedded?: boolean }) {
                     onClick={() => checkGrant(s.sessionId)}
                   >
                     Check grant
-                  </button>
-                  <button
-                    type="button"
-                    className="text-xs text-white/70 border border-white/20 px-3 py-1 rounded-full"
-                    onClick={() => loadGrantTxPlan(s.sessionId)}
-                  >
-                    Grant tx plan
                   </button>
                   <GrantRevokeButton
                     granter={ownerInj}

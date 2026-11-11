@@ -36,8 +36,11 @@ export function buildGrantTxPlan(params: {
   msgGrants: unknown[];
   spikeCliHint: string;
 } {
-  const expirySeconds = params.plan.expirySeconds ?? 86_400;
-  const expirationUnix = Math.floor(Date.now() / 1000) + expirySeconds;
+  const expirySeconds = params.plan.expirySeconds;
+  if (expirySeconds == null || !Number.isFinite(expirySeconds) || expirySeconds < 1) {
+    throw new Error("buildGrantTxPlan requires explicit expirySeconds on grant plan");
+  }
+  const expirationUnix = Math.floor(Date.now() / 1000) + Math.floor(expirySeconds);
   const { subaccountId, marketIds } = params.plan;
 
   const msgGrantInputs = [

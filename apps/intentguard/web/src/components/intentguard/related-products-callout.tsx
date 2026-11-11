@@ -21,7 +21,7 @@ export function RelatedProductsCallout() {
         >
           built-in strategies on Helix
         </a>{" "}
-        (grid, DCA, etc.) — great if you want a retail bot inside Helix. IntentGuard is{" "}
+        (grid, DCA, etc.) — great if you want a retail bot inside Helix. Fence is{" "}
         <strong className="text-white">not</strong> another grid bot: it is a{" "}
         <strong className="text-white">policy gateway</strong> for{" "}
         <strong className="text-white">bring-your-own</strong> agents (MCP, custom bots) with

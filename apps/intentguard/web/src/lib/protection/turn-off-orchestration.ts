@@ -77,7 +77,7 @@ export async function orchestrateTurnOffProtection(params: {
 
   progress?.({
     step: "session",
-    message: "Ending IntentGuard session on the server…",
+    message: "Ending Fence session on the server…",
   });
 
   if (trace) trace.gatewayRevokeCalled = true;

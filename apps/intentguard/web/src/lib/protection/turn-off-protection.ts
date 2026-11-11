@@ -161,7 +161,7 @@ export async function turnOffProtection(params: {
 }
 
 /**
- * User already revoked wallet permission in Keplr — end IntentGuard session only.
+ * User already revoked wallet permission in Keplr — end Fence session only.
  * No on-chain transactions. Not triggered automatically from grant-status.
  */
 export async function cleanupApplicationSessionOnly(params: {
@@ -174,7 +174,7 @@ export async function cleanupApplicationSessionOnly(params: {
 > {
   params.onProgress?.({
     step: "session",
-    message: "Ending IntentGuard session (no new wallet transaction)…",
+    message: "Ending Fence session (no new wallet transaction)…",
   });
   const sessionRes = await endGatewaySession(params.settings, params.sessionId);
   if (!sessionRes.ended) {
@@ -191,7 +191,7 @@ export async function cleanupApplicationSessionOnly(params: {
   return {
     ok: true,
     message:
-      "IntentGuard session ended. No new on-chain transaction was submitted — use this when you already revoked wallet permission in Keplr.",
+      "Fence session ended. No new on-chain transaction was submitted — use this when you already revoked wallet permission in Keplr.",
   };
 }
 

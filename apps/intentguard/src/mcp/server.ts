@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * IntentGuard MCP — policy + grant audit only (no keys, no MsgExec).
+ * Fence MCP (intentguard-policy) — policy + grant audit only (no keys, no MsgExec).
  *
  * Cursor: .cursor/mcp.json → intentguard-policy
  */
@@ -134,19 +134,32 @@ server.tool(
   },
 );
 
-async function gatewayExecute(intent: TradeIntent): Promise<unknown> {
+async function gatewayExecute(params: {
+  intent: TradeIntent;
+  proposalId: string;
+  idempotencyKey: string;
+}): Promise<unknown> {
   return gatewayFetch("/v1/execute", {
     method: "POST",
-    body: JSON.stringify({ intent }),
+    body: JSON.stringify({ intent: params.intent, proposalId: params.proposalId }),
+    idempotencyKey: params.idempotencyKey,
   });
 }
 
 server.tool(
   "intentguard_gateway_execute",
-  "Live POST /v1/execute after propose allowed. Requires sidecar INTENTGUARD_EXECUTE=1 and on-chain grant. Agent token only — never owner/grantee keys. Set INTENTGUARD_GATEWAY_URL + INTENTGUARD_AGENT_TOKEN.",
-  { intent: intentSchema },
-  async ({ intent }) => {
-    const result = await gatewayExecute(intent as TradeIntent);
+  "Live POST /v1/execute — requires proposalId from propose and Idempotency-Key. Requires sidecar INTENTGUARD_EXECUTE=1 and on-chain grant.",
+  {
+    intent: intentSchema,
+    proposalId: z.string(),
+    idempotencyKey: z.string(),
+  },
+  async ({ intent, proposalId, idempotencyKey }) => {
+    const result = await gatewayExecute({
+      intent: intent as TradeIntent,
+      proposalId,
+      idempotencyKey,
+    });
     return {
       content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
     };

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/layout/app-shell";
+import { PRODUCT_NAME } from "@/lib/brand";
 import { HomeHeroIntro } from "@/components/intentguard/home-hero";
 import { HomePageActions, HomePrerequisites } from "@/components/intentguard/home-page-actions";
 import { HeroStagger } from "@/components/motion/hero-stagger";
@@ -14,7 +15,7 @@ export default function Home() {
             <div className="hero-stagger__item">
               <h1 className="md:text-5xl text-3xl font-sans font-thin uppercase text-left mb-4 inline-block">
                 <span className="motion-title-chip bg-orange-400 px-2 rounded-md text-black shadow-md">
-                  IntentGuard
+                  {PRODUCT_NAME}
                 </span>
               </h1>
               <HomeHeroIntro />
@@ -38,7 +39,7 @@ export default function Home() {
               <span className="motion-title-chip bg-orange-400 px-2 text-black">Why this exists</span>
             </h2>
             <p className="text-white/55 text-sm max-w-2xl mb-8">
-              Many AI tools ask for broad trading access. IntentGuard is for people who want{" "}
+              Many AI tools ask for broad trading access. {PRODUCT_NAME} is for people who want{" "}
               <strong className="text-white/75">bring-your-own bots</strong> on Injective with caps —
               not another grid bot inside Helix.
             </p>

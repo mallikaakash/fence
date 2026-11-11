@@ -1,6 +1,6 @@
 # Chosen track
 
-**Hero:** IntentGuard  
+**Hero product name:** **Fence** (implementation path: `apps/intentguard/`, legacy codename IntentGuard)  
 **Demo Day addon:** OptionLens (proposals only; execution must pass IntentGuard)  
 **Next / kill-switch product:** AgentPay Control  
 **Parked:** AgentProof, NEAR-style intents protocol

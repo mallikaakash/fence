@@ -11,7 +11,7 @@ export default function LimitationsPage() {
     <AppShell>
       <InnerPage
         title="How it works & limits"
-        subtitle="IntentGuard checks every trade against your rules on Injective testnet before it can reach the exchange."
+        subtitle="Fence checks every trade against your rules on Injective testnet before it can reach the exchange."
       >
         <div className="space-y-6">
           <ol className="text-white/75 text-sm space-y-3 list-decimal list-inside">

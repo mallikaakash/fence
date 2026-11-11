@@ -50,10 +50,8 @@ jobs:
       - name: Security verify
         run: npm run security:verify
 
-      - name: Protocol E2E (offline + live LCD)
+      - name: Protocol E2E (offline only)
         run: npm run e2e:protocol
-        env:
-          INTENTGUARD_E2E_LIVE: "1"
 
       - name: GTM verify
         run: npm run gtm:verify
@@ -72,6 +70,24 @@ jobs:
 
       - name: Production verify (includes web build)
         run: npm run production:verify
+
+  protocol-e2e-live:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/intentguard/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Protocol E2E (live testnet — requires fixture grants)
+        run: npm run e2e:protocol:live
 
   docker:
     runs-on: ubuntu-latest

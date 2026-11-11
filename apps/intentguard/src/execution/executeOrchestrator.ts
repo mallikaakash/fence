@@ -30,6 +30,10 @@ import {
   STATE_WRITE_FROZEN_ERROR_CODE,
   STATE_WRITE_FROZEN_MESSAGE,
 } from "../persistence/stateWriteFreezeEnv.ts";
+import {
+  assertExecuteReadinessForBroadcast,
+  type ExecuteReadinessGateResult,
+} from "./executeReadinessGate.ts";
 
 export type ExecuteHttpOutcome = {
   httpStatus: number;
@@ -42,13 +46,15 @@ export type ExecuteOrchestratorDeps = {
   gateway: IntentGuardGateway;
   safety: ExecutionSafetyStore;
   audit: AuditLog;
-  config: Pick<
-    GatewayConfig,
-    "executeEnabled" | "requireOnChainGrant" | "network"
-  > & {
+  config: Pick<GatewayConfig, "executeEnabled" | "requireOnChainGrant" | "network"> & {
+    requireExecuteReadiness?: boolean;
     ownerPrivateKeyHex?: string | null;
     executionMaintenance?: boolean;
   };
+  /** Test override for execute readiness gate (chain queries). */
+  executeReadinessGate?: (
+    params: Parameters<typeof assertExecuteReadinessForBroadcast>[0],
+  ) => Promise<ExecuteReadinessGateResult>;
   /** When set (tests), overrides config/env for maintenance checks at each gate. */
   executionMaintenanceProbe?: () => boolean;
   runChainExecute?: (
@@ -639,6 +645,46 @@ export async function orchestrateAgentExecute(params: {
             body: { ...body, errorCode: "policy_denied", executionState: record.state },
             needsPersist: true,
           };
+        }
+
+        if (config.requireExecuteReadiness === true) {
+          const readinessProbe =
+            params.deps.executeReadinessGate ?? assertExecuteReadinessForBroadcast;
+          const readiness = await readinessProbe({
+            session,
+            network: config.network ?? "testnet",
+            marketId: params.intent.marketId,
+          });
+          audit.append(
+            readiness.ok ? "execute_readiness_ok" : "execute_readiness_fail",
+            readiness.ok ? "readiness verified" : readiness.message,
+            {
+              sessionId: session.sessionId,
+              proposalId: params.proposalId,
+              blockers: readiness.ok ? [] : readiness.blockers,
+            },
+          );
+          if (!readiness.ok) {
+            failBeforeBroadcast(
+              safety,
+              params.proposalId,
+              idempotencyKeyHash,
+              record,
+              new Date(nowMs()).toISOString(),
+              readiness.message,
+            );
+            await durablePersist(persistNow);
+            return {
+              httpStatus: readiness.errorCode === "execute_readiness_unavailable" ? 503 : 403,
+              body: {
+                error: readiness.message,
+                errorCode: readiness.errorCode,
+                blockers: readiness.blockers,
+                executionState: record.state,
+              },
+              needsPersist: true,
+            };
+          }
         }
 
         if (shouldVerifyAuthzAtExecute(config.requireOnChainGrant)) {

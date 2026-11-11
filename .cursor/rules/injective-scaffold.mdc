@@ -7,7 +7,7 @@ alwaysApply: true
 
 ## Intent
 
-**Chosen track: IntentGuard** (`brainstorm/CHOSEN.md`). Implement under `apps/intentguard/`. Keep testnet-first; do not expand into AgentPay/OptionLens apps until IntentGuard kill-switch tests pass.
+**Product: Fence** (`brainstorm/CHOSEN.md`). Implement under `apps/intentguard/` (repo codename). Keep testnet-first; do not expand into AgentPay/OptionLens apps until IntentGuard kill-switch tests pass.
 
 ## Defaults
 

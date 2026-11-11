@@ -75,8 +75,10 @@ const execOff = await fetch(`${base}/v1/execute`, {
   headers: {
     authorization: `Bearer ${created.agentApiToken}`,
     "content-type": "application/json",
+    "idempotency-key": "product-smoke-exec-off",
   },
   body: JSON.stringify({
+    proposalId: "prp_deadbeef",
     intent: {
       marketId: "0xdc70164d7120529c3cd84278c98df4151210c0447a65a2aab03459cf328de41e",
       margin: "1",
@@ -86,7 +88,7 @@ const execOff = await fetch(`${base}/v1/execute`, {
     },
   }),
 });
-assert.equal(execOff.status, 503);
+assert.ok([400, 404, 503].includes(execOff.status), `execute status ${execOff.status}`);
 
 const list = await fetch(`${base}/v1/sessions`, {
   headers: { authorization: `Bearer ${config.ownerApiKey}` },

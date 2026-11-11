@@ -29,6 +29,8 @@ export type GatewayConfig = {
   network: "testnet" | "mainnet";
   /** When true, execute denies if typed AuthZ grant missing on-chain. */
   requireOnChainGrant: boolean;
+  /** When true, POST /v1/execute re-checks owner readiness (collateral, grants, gas) before broadcast. */
+  requireExecuteReadiness: boolean;
   dataKey: Buffer | null;
   requireDataKey: boolean;
   corsOrigins: string[];
@@ -123,6 +125,10 @@ export function loadConfig(): GatewayConfig {
   const requireOnChainGrant = process.env.INTENTGUARD_REQUIRE_ONCHAIN_GRANT !== "0";
   enforceHostedAuthzPolicy(requireOnChainGrant);
 
+  const requireExecuteReadiness =
+    process.env.INTENTGUARD_REQUIRE_EXECUTE_READINESS === "1" ||
+    process.env.INTENTGUARD_REQUIRE_EXECUTE_READINESS === "true";
+
   const dataKey = parseDataKey(process.env.INTENTGUARD_DATA_KEY);
   const requireDataKey =
     process.env.INTENTGUARD_REQUIRE_DATA_KEY === "1" ||
@@ -171,6 +177,7 @@ export function loadConfig(): GatewayConfig {
     ownerPrivateKeyHex,
     network,
     requireOnChainGrant,
+    requireExecuteReadiness,
     dataKey,
     requireDataKey,
     corsOrigins,

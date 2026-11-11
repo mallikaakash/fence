@@ -8,6 +8,8 @@
     "skills:update": "npx --yes skills update",
     "mcp:build": "npm install && npm run build --prefix vendor/mcp-server",
     "doctor": "bash scripts/doctor.sh",
+    "intentguard:deploy:validate": "bash scripts/validate-gateway-deploy.sh",
+    "intentguard:deploy:verify-live": "bash scripts/verify-gateway-cloudrun-live.sh",
     "intentguard:test": "npm test --prefix apps/intentguard",
     "intentguard:demo": "npm run demo --prefix apps/intentguard",
     "intentguard:audit": "npm run audit --prefix apps/intentguard",

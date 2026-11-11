@@ -22,6 +22,12 @@ command -v git >/dev/null && echo "OK   git" || { echo "FAIL git"; ok=false; }
 [ -f vendor/mcp-server/dist/mcp/server.js ] && echo "OK   trading MCP built" || echo "WARN trading MCP not built (npm run setup)"
 [ -d .agents/skills/injective-mcp-servers ] && echo "OK   injective-mcp-servers skill" || echo "WARN skills missing (npm run skills:install)"
 
+if [ -x scripts/validate-gateway-deploy.sh ]; then
+  bash scripts/validate-gateway-deploy.sh && echo "OK   gateway deploy script validation" || { echo "FAIL gateway deploy script validation"; ok=false; }
+else
+  echo "WARN validate-gateway-deploy.sh not executable"
+fi
+
 if [ -f .env ]; then
   # shellcheck disable=SC1091
   source .env

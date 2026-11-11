@@ -62,7 +62,7 @@ describe("gatewayDeployValidate", () => {
   });
 
   it("web deploy scaling is not constrained to single instance", () => {
-    const deploy = readFileSync(join(repoRoot, "scripts/deploy-intentguard-gcp.sh"), "utf8");
+    const deploy = readFileSync(join(repoRoot, "scripts/lib/intentguard-deploy-lib.sh"), "utf8");
     const webBlock = extractGcloudBlocks(deploy).find((b) => /\$WEB_SERVICE/.test(b));
     assert.ok(webBlock);
     assert.ok(/--max-instances[= ]5/.test(webBlock));

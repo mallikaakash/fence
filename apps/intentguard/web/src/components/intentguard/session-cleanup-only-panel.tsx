@@ -10,7 +10,7 @@ import { loadGatewaySettings } from "@/lib/gateway/storage";
 import type { ProtectionSummary } from "@/lib/protection-state";
 
 const CONFIRM =
-  "This ends your IntentGuard session and clears the bot access code on this device. It does NOT submit any wallet transaction — use this only if you already revoked permission in Keplr.\n\nContinue?";
+  "This ends your Fence session and clears the bot access code on this device. It does NOT submit any wallet transaction — use this only if you already revoked permission in Keplr.\n\nContinue?";
 
 export function SessionCleanupOnlyPanel({
   summary,
@@ -69,7 +69,7 @@ export function SessionCleanupOnlyPanel({
   return (
     <div className="border border-white/15 rounded-lg p-3 bg-black/20 space-y-2">
       <p className="text-xs text-white/60">
-        Already revoked in Keplr? End the IntentGuard session here without signing a new
+        Already revoked in Keplr? End the Fence session here without signing a new
         transaction.
       </p>
       <button

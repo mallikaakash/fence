@@ -28,7 +28,7 @@ export function ProtectionStatusBanner() {
         <span>
           Protection{" "}
           <strong className={summary.grantReady ? "text-green-300" : "text-amber-200"}>
-            {summary.grantReady ? "active" : "pending permission"}
+            {summary.grantReady ? "wallet permission on-chain" : "pending permission"}
           </strong>
           {" · "}
           {labels} · max order {summary.maxOrderNotional} · daily margin{" "}
@@ -38,6 +38,16 @@ export function ProtectionStatusBanner() {
           Dashboard
         </Link>
       </div>
+      {summary.grantReady ? (
+        <p className="text-[11px] text-white/45">
+          On-chain permission does not mean execute-ready — confirm subaccount{" "}
+          <strong className="text-white/55">quote collateral</strong> on{" "}
+          <Link href="/trade" className="text-[#75bfcf] underline">
+            Trade
+          </Link>
+          .
+        </p>
+      ) : null}
       <ProtectionLiveStatus />
     </div>
   );

@@ -50,7 +50,7 @@ export function buildTurnOffMessage(d: TurnOffDimensions): {
     return {
       message: d.broadcastError
         ? `Wallet permission was not revoked: ${d.broadcastError}`
-        : "Wallet permission was not revoked. No transaction was broadcast. Your IntentGuard session is unchanged.",
+        : "Wallet permission was not revoked. No transaction was broadcast. Your Fence session is unchanged.",
       isCompleteSuccess: false,
       canRetrySession: false,
     };
@@ -59,7 +59,7 @@ export function buildTurnOffMessage(d: TurnOffDimensions): {
   if (!sessionEnded && d.session === "failed") {
     return {
       message:
-        "Wallet revocation was submitted, but IntentGuard could not confirm that the bot session was ended. Retry session cleanup.",
+        "Wallet revocation was submitted, but Fence could not confirm that the bot session was ended. Retry session cleanup.",
       isCompleteSuccess: false,
       canRetrySession: true,
     };
@@ -67,7 +67,7 @@ export function buildTurnOffMessage(d: TurnOffDimensions): {
 
   if (sessionEnded && walletCleared) {
     return {
-      message: "Wallet permission revoked. IntentGuard session ended.",
+      message: "Wallet permission revoked. Fence session ended.",
       isCompleteSuccess: true,
       canRetrySession: false,
     };
@@ -79,7 +79,7 @@ export function buildTurnOffMessage(d: TurnOffDimensions): {
         ? " One of two revoke transactions did not complete."
         : "";
     return {
-      message: `IntentGuard session ended, but wallet permission revocation is incomplete. Review the remaining wallet permission in Keplr or the block explorer.${partialTx}`,
+      message: `Fence session ended, but wallet permission revocation is incomplete. Review the remaining wallet permission in Keplr or the block explorer.${partialTx}`,
       isCompleteSuccess: false,
       canRetrySession: false,
     };

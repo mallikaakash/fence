@@ -8,12 +8,20 @@ export function GrantBroadcastButton({
   grantTxPlanJson,
   network = "testnet",
   onSuccess,
+  onBeforeSign,
+  onWalletRejected,
+  onBroadcastFailed,
+  disabled = false,
   actionLabel = "Approve permission in Keplr",
 }: {
   ownerInjectiveAddress: string;
   grantTxPlanJson: string;
   network?: "testnet" | "mainnet";
   onSuccess?: (txHash: string) => void;
+  onBeforeSign?: () => void | Promise<void>;
+  onWalletRejected?: () => void;
+  onBroadcastFailed?: (message: string) => void;
+  disabled?: boolean;
   actionLabel?: string;
 }) {
   const [busy, setBusy] = useState(false);
@@ -37,6 +45,10 @@ export function GrantBroadcastButton({
       if (!ownerInjectiveAddress.startsWith("inj1")) {
         throw new Error("Set owner inj1… address (Connect Keplr) before signing");
       }
+      if (network !== "testnet") {
+        throw new Error("Only testnet grant broadcast is enabled in this build");
+      }
+      if (onBeforeSign) await onBeforeSign();
       const { txHash } = await broadcastGrantTxPlan({
         network,
         ownerInjectiveAddress,
@@ -45,7 +57,18 @@ export function GrantBroadcastButton({
       setResult(txHash);
       onSuccess?.(txHash);
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes("rejected") ||
+        lower.includes("request rejected") ||
+        lower.includes("user denied")
+      ) {
+        onWalletRejected?.();
+      } else {
+        onBroadcastFailed?.(msg);
+      }
+      setError(msg);
     } finally {
       setBusy(false);
     }
@@ -55,7 +78,7 @@ export function GrantBroadcastButton({
     <div className="space-y-2">
       <button
         type="button"
-        disabled={busy || !grantTxPlanJson}
+        disabled={busy || !grantTxPlanJson || disabled}
         className="px-3 py-1.5 rounded-full border border-[#75bfcf]/50 text-[#75bfcf] text-xs hover:bg-[#75bfcf]/10 disabled:opacity-50"
         onClick={() => void signAndBroadcast()}
       >

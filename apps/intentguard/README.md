@@ -1,12 +1,12 @@
-# IntentGuard
+# Fence
 
-Injective-native financial execution policy for AI agents.
+Injective-native financial execution policy for AI agents. (Repo folder `intentguard/`, legacy codename.)
 
 **Route A (baseline):** typed exchange AuthZ (`market_ids` + `subaccount_id`) + isolated grantee signer + gateway order economics + dedicated funded subaccount.
 
 **Route B (challenger):** Exchange Precompile Policy Vault — spike in parallel; promote only if stronger non-bypass is proven.
 
-**Non-bypass rule:** the agent never holds the AuthZ grantee private key. Only the isolated IntentGuard signer does.
+**Non-bypass rule:** the agent never holds the AuthZ grantee private key. Only the isolated Fence gateway signer does.
 
 **Diligence:** `../../brainstorm/DILIGENCE.md`
 

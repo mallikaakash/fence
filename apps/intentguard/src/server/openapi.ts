@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "../brand.ts";
 import { INTENTGUARD_VERSION } from "./version.ts";
 
 /** OpenAPI 3.0 for codegen / agent tools — served at GET /v1/openapi.json */
@@ -5,7 +6,7 @@ export function buildOpenApiDocument() {
   return {
     openapi: "3.0.3",
     info: {
-      title: "IntentGuard Gateway",
+      title: `${PRODUCT_NAME} Gateway`,
       version: INTENTGUARD_VERSION,
       description:
         "Agent uses agt_… on POST /v1/propose (policy only) and POST /v1/execute (MsgExec when enabled). See docs/AGENTS.md.",

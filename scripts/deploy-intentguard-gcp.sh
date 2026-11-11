@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 # Deploy IntentGuard gateway + web to Google Cloud Run.
+# INTENTGUARD_DEPLOY_TARGET: full (default) | gateway | web
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=lib/gateway-cloudrun-scale.sh
+source "$ROOT/scripts/lib/gateway-cloudrun-scale.sh"
+# shellcheck source=lib/intentguard-deploy-lib.sh
+source "$ROOT/scripts/lib/intentguard-deploy-lib.sh"
+
 IG="$ROOT/apps/intentguard"
 WEB="$ROOT/apps/intentguard/web"
 
@@ -17,121 +23,73 @@ if [[ -z "$PROJECT_ID" || "$PROJECT_ID" == "(unset)" ]]; then
   exit 1
 fi
 
+intentguard_resolve_deploy_target
+
 echo "Project: $PROJECT_ID  Region: $REGION  State bucket: gs://$BUCKET"
 
-gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
-  artifactregistry.googleapis.com secretmanager.googleapis.com storage.googleapis.com \
-  --project "$PROJECT_ID"
+case "$DEPLOY_TARGET" in
+  full | gateway)
+    intentguard_ensure_apis_and_bucket
+    PROJECT_NUMBER="$(intentguard_project_number)"
+    RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+    BUILD_SA="service-${PROJECT_NUMBER}@serverless-robot-prod.iam.gserviceaccount.com"
+    intentguard_prepare_secrets_for_gateway
+    ;;
+  web)
+  intentguard_run_gcloud services enable run.googleapis.com cloudbuild.googleapis.com \
+    artifactregistry.googleapis.com secretmanager.googleapis.com \
+    --project "$PROJECT_ID"
+    intentguard_prepare_secrets_for_web_only
+    ;;
+esac
 
-if ! gcloud storage buckets describe "gs://$BUCKET" --project "$PROJECT_ID" &>/dev/null; then
-  gcloud storage buckets create "gs://$BUCKET" \
-    --project "$PROJECT_ID" \
-    --location "$REGION" \
-    --uniform-bucket-level-access
-fi
+# Production image deploys below do NOT enable execution maintenance by default.
+# For rollouts with live execute, follow docs/DEPLOY-GCP.md § "Deploy / rollback — pause executes".
+GW_URL=""
+WEB_URL=""
 
-# Secrets (create once; reuse on redeploy)
-DATA_KEY="${INTENTGUARD_DATA_KEY:-}"
-OWNER_KEY="${INTENTGUARD_OWNER_API_KEY:-}"
-if [[ -f "$IG/.env.deploy" ]]; then
-  # shellcheck disable=SC1091
-  source "$IG/.env.deploy"
-  DATA_KEY="${DATA_KEY:-$INTENTGUARD_DATA_KEY}"
-  OWNER_KEY="${OWNER_KEY:-$INTENTGUARD_OWNER_API_KEY}"
-fi
-if [[ -z "$DATA_KEY" ]]; then DATA_KEY="$(openssl rand -hex 32)"; fi
-if [[ -z "$OWNER_KEY" ]]; then OWNER_KEY="own_$(openssl rand -hex 24)"; fi
-
-ensure_secret() {
-  local name="$1" val="$2"
-  if ! gcloud secrets describe "$name" --project "$PROJECT_ID" &>/dev/null; then
-    printf '%s' "$val" | gcloud secrets create "$name" \
-      --project "$PROJECT_ID" \
-      --data-file=-
-  else
-    printf '%s' "$val" | gcloud secrets versions add "$name" \
-      --project "$PROJECT_ID" \
-      --data-file=-
-  fi
-}
-
-ensure_secret intentguard-data-key "$DATA_KEY"
-ensure_secret intentguard-owner-api-key "$OWNER_KEY"
-
-# Save local copy for your records (gitignored)
-cat > "$IG/.env.deploy" <<EOF
-INTENTGUARD_DATA_KEY=$DATA_KEY
-INTENTGUARD_OWNER_API_KEY=$OWNER_KEY
-INTENTGUARD_REQUIRE_DATA_KEY=1
-EOF
-chmod 600 "$IG/.env.deploy"
-
-PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
-# Cloud Run revisions use the default compute service account unless overridden.
-RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
-BUILD_SA="service-${PROJECT_NUMBER}@serverless-robot-prod.iam.gserviceaccount.com"
-
-for secret in intentguard-data-key intentguard-owner-api-key; do
-  for sa in "$RUNTIME_SA" "$BUILD_SA"; do
-    gcloud secrets add-iam-policy-binding "$secret" \
-      --project "$PROJECT_ID" \
-      --member "serviceAccount:${sa}" \
-      --role "roles/secretmanager.secretAccessor" \
-      --quiet &>/dev/null || true
-  done
-done
-
-echo "Deploying gateway ($GW_SERVICE)…"
-# Product scope: testnet only — see docs/NETWORK.md (INJECTIVE_NETWORK=testnet)
-cd "$IG"
-gcloud run deploy "$GW_SERVICE" \
-  --project "$PROJECT_ID" \
-  --region "$REGION" \
-  --source . \
-  --quiet \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 512Mi \
-  --cpu 1 \
-  --min-instances 1 \
-  --max-instances 3 \
-  --set-env-vars "DOCKER=1,INJECTIVE_NETWORK=testnet,INTENTGUARD_EXECUTE=1,INTENTGUARD_REQUIRE_DATA_KEY=1,INTENTGUARD_DATA_DIR=/data/.intentguard,INTENTGUARD_REQUIRE_ONCHAIN_GRANT=1" \
-  --set-secrets "INTENTGUARD_DATA_KEY=intentguard-data-key:latest,INTENTGUARD_OWNER_API_KEY=intentguard-owner-api-key:latest" \
-  --add-volume "name=igdata,type=cloud-storage,bucket=${BUCKET}" \
-  --add-volume-mount "volume=igdata,mount-path=/data"
-
-GW_URL="$(gcloud run services describe "$GW_SERVICE" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
-echo "Gateway URL: $GW_URL"
-
-echo "Deploying web ($WEB_SERVICE)…"
-cd "$WEB"
-gcloud run deploy "$WEB_SERVICE" \
-  --project "$PROJECT_ID" \
-  --region "$REGION" \
-  --source . \
-  --quiet \
-  --allow-unauthenticated \
-  --port 8080 \
-  --memory 512Mi \
-  --cpu 1 \
-  --min-instances 0 \
-  --max-instances 5 \
-  --set-env-vars "INTENTGUARD_GATEWAY_URL=${GW_URL},NEXT_PUBLIC_INTENTGUARD_PROXY_DEFAULT=1" \
-  --set-secrets "INTENTGUARD_OWNER_API_KEY=intentguard-owner-api-key:latest"
-
-WEB_URL="$(gcloud run services describe "$WEB_SERVICE" --project "$PROJECT_ID" --region "$REGION" --format='value(status.url)')"
-echo "Web URL: $WEB_URL"
-
-# CORS for browser calls that hit gateway directly (agents use gateway URL; console uses proxy)
-cd "$IG"
-gcloud run services update "$GW_SERVICE" \
-  --project "$PROJECT_ID" \
-  --region "$REGION" \
-  --quiet \
-  --update-env-vars "INTENTGUARD_CORS_ORIGINS=${WEB_URL}"
+case "$DEPLOY_TARGET" in
+  full)
+    intentguard_deploy_gateway_service
+    intentguard_discover_gateway_url
+    echo "Gateway URL: $GW_URL"
+    intentguard_deploy_web_service
+    intentguard_discover_web_url
+    echo "Web URL: $WEB_URL"
+    intentguard_update_gateway_cors
+    ;;
+  gateway)
+    intentguard_deploy_gateway_service
+    intentguard_discover_gateway_url
+    echo "Gateway URL: $GW_URL"
+    intentguard_discover_web_url
+    echo "Web URL (existing, for CORS): $WEB_URL"
+    intentguard_update_gateway_cors
+    ;;
+  web)
+    intentguard_discover_gateway_url
+    if [[ -z "$GW_URL" ]]; then
+      echo "Gateway URL required for web deploy — is $GW_SERVICE deployed?" >&2
+      exit 1
+    fi
+    echo "Gateway URL (unchanged): $GW_URL"
+    intentguard_deploy_web_service
+    intentguard_discover_web_url
+    echo "Web URL: $WEB_URL"
+    ;;
+esac
 
 echo ""
-echo "Verify:"
-echo "  curl -sS ${WEB_URL}/api/hosted/status"
-echo "  curl -sS ${WEB_URL}/api/gateway/health"
-echo "  open ${WEB_URL}/console"
+echo "Deploy target completed: ${DEPLOY_TARGET}"
+echo "Local script check (no GCP): bash scripts/validate-gateway-deploy.sh"
+echo ""
+echo "Verify (after deploy completes):"
+echo "  bash scripts/verify-gateway-cloudrun-live.sh  # read-only; needs GCP auth"
+if [[ "$DEPLOY_TARGET" != "web" ]]; then
+  echo "  # Expect service max=1, revision maxScale=1, single traffic target"
+fi
+if [[ -n "${WEB_URL:-}" ]]; then
+  echo "  curl -sS ${WEB_URL}/api/hosted/status"
+  echo "  curl -sS ${WEB_URL}/api/gateway/health"
+  echo "  open ${WEB_URL}/console"
+fi

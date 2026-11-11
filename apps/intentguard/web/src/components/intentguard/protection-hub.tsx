@@ -7,6 +7,8 @@ import { loadProtectionSummary, type ProtectionSummary } from "@/lib/protection-
 import { ProtectionLiveStatus } from "@/components/intentguard/protection-live-status";
 import { ProtectionStatusHeadline } from "@/components/intentguard/protection-status-headline";
 import { ProtectionReadiness } from "@/components/intentguard/protection-readiness";
+import { SessionExecuteReadiness } from "@/components/intentguard/session-execute-readiness";
+import { SessionExposurePanel } from "@/components/intentguard/session-exposure-panel";
 import { ConnectBotPanel } from "@/components/intentguard/connect-bot-panel";
 import { RecentActivityPreview } from "@/components/intentguard/recent-activity-preview";
 import { TurnOffProtectionPanel } from "@/components/intentguard/turn-off-protection-panel";
@@ -102,6 +104,10 @@ export function ProtectionHub() {
       </div>
 
       <ProtectionReadiness refreshKey={refreshKey} />
+
+      <SessionExecuteReadiness key={refreshKey} />
+
+      <SessionExposurePanel key={`exp-${refreshKey}`} />
 
       <ConnectBotPanel collapsedAdvanced refreshKey={refreshKey} />
 

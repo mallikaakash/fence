@@ -106,4 +106,49 @@ describe("gateway HTTP", () => {
     );
     assert.equal(revoke.status, 200);
   });
+
+  it("grant-tx-plan requires explicit expiry when session has none", async () => {
+    const base = `http://127.0.0.1:${port}`;
+    const create = await fetch(`${base}/v1/sessions`, {
+      method: "POST",
+      headers: {
+        authorization: `Bearer ${ownerKey}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        policy: {
+          version: 1,
+          marketIds: ["0x4ca0f92fc28be0c91aac85684d25837d8d0d9ccd8d3225fdde9fb054d64544cf"],
+          maxMarginPerOrder: "100",
+          maxOrderNotional: "10",
+          maxLeverage: 3,
+          dailyMarginBudget: "500",
+        },
+        ownerInjectiveAddress: "inj1aaxw59f4jvu4ws83gg6tufx3mr6ep3z0hdrhvm",
+        subaccountIndex: 1,
+      }),
+    });
+    const created = (await create.json()) as { session: { sessionId: string } };
+    assert.equal(create.status, 201);
+
+    const missing = await fetch(
+      `${base}/v1/sessions/${created.session.sessionId}/grant-tx-plan`,
+      { headers: { authorization: `Bearer ${ownerKey}` } },
+    );
+    assert.equal(missing.status, 400);
+    const missBody = (await missing.json()) as { code?: string };
+    assert.equal(missBody.code, "grant_expiry_required");
+
+    const ok = await fetch(
+      `${base}/v1/sessions/${created.session.sessionId}/grant-tx-plan?expirySeconds=3600`,
+      { headers: { authorization: `Bearer ${ownerKey}` } },
+    );
+    assert.equal(ok.status, 200);
+    const body = (await ok.json()) as {
+      expirySeconds: number;
+      txPlan: { msgGrants: unknown[] };
+    };
+    assert.equal(body.expirySeconds, 3600);
+    assert.equal(body.txPlan.msgGrants.length, 2);
+  });
 });

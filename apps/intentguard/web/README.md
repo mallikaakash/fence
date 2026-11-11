@@ -1,6 +1,6 @@
-# IntentGuard web (Next.js)
+# Fence web (Next.js)
 
-Glassmorphism UI adapted from [aleo-mvp](https://github.com/mallikaakash/aleo-mvp) (`frontend/`), re-themed for **IntentGuard on Injective**.
+Glassmorphism UI adapted from [aleo-mvp](https://github.com/mallikaakash/aleo-mvp) (`frontend/`), re-themed for **Fence on Injective**.
 
 ## Run
 

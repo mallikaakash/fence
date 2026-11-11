@@ -12,6 +12,12 @@ export type GatewaySettings = {
   agentApiToken: string;
 };
 
+/** Owner-scoped routes work with an explicit own_ key or hosted /api/gateway proxy injection. */
+export function gatewayOwnerRoutesAvailable(settings: GatewaySettings): boolean {
+  if (settings.ownerApiKey?.startsWith("own_")) return true;
+  return settings.baseUrl.includes("/api/gateway");
+}
+
 export function loadGatewaySettings(): GatewaySettings {
   if (typeof window === "undefined") {
     return { baseUrl: "", ownerApiKey: "", agentApiToken: "" };

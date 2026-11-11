@@ -100,6 +100,31 @@ describe("assessSessionReadiness (mocked chain)", () => {
     assert.equal(res.checks.market.status, "ready");
   });
 
+  it("grants ready but subaccount below policy margin → action_required (G4 pattern)", async () => {
+    const res = await assessSessionReadiness({
+      session: baseSession({ policy: { ...baseSession().policy, maxMarginPerOrder: "50" } }),
+      network: "testnet",
+      deps: {
+        verifyGrants: async () => grantReady(),
+        queryInj: async () => ({
+          status: "ok",
+          amount: "200000000000000000",
+          amountWei: 200000000000000000n,
+          source: "grpc",
+        }),
+        fetchMarket: async () => marketOk,
+        fetchSubaccountBalance: async () => ({
+          availableBalance: "0",
+          totalBalance: "0",
+        }),
+      },
+    });
+    assert.equal(res.checks.grants.status, "ready");
+    assert.equal(res.checks.subaccountCollateral.status, "action_required");
+    assert.equal(res.overallStatus, "action_required");
+    assert.match(res.checks.subaccountCollateral.summary ?? "", /USDC/i);
+  });
+
   it("missing grants → action_required", async () => {
     const res = await assessSessionReadiness({
       session: baseSession(),

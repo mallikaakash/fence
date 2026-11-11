@@ -23,6 +23,7 @@ export function AgentDemo() {
   const [busy, setBusy] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [pendingIntent, setPendingIntent] = useState<Record<string, unknown> | null>(null);
+  const [pendingProposalId, setPendingProposalId] = useState<string | null>(null);
   const [walletGrantReady, setWalletGrantReady] = useState(false);
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export function AgentDemo() {
 
     setBusy(true);
     setPendingIntent(null);
+    setPendingProposalId(null);
     setSteps([
       { role: "user", text: p.phrase },
       { role: "guard", text: "Policy check (no trade sent)…" },
@@ -64,8 +66,10 @@ export function AgentDemo() {
 
       setSteps((prev) => [...prev.slice(0, -1), { role: "guard", text: line }]);
 
-      if (status === "allowed" && res.ok) {
+      const proposalId = (json as { proposalId?: string }).proposalId;
+      if (status === "allowed" && res.ok && proposalId) {
         setPendingIntent(intent);
+        setPendingProposalId(proposalId);
       }
     } catch (e) {
       setSteps((prev) => [
@@ -78,7 +82,7 @@ export function AgentDemo() {
   }
 
   async function runExecuteConfirm() {
-    if (!pendingIntent) return;
+    if (!pendingIntent || !pendingProposalId) return;
     const summary = loadProtectionSummary();
     if (!summary) return;
 
@@ -98,7 +102,11 @@ export function AgentDemo() {
     ]);
     try {
       const s = loadGatewaySettings();
-      const ex = await gatewayExecute(s, pendingIntent);
+      const ex = await gatewayExecute(
+        s,
+        { intent: pendingIntent, proposalId: pendingProposalId },
+        `agent-demo-${pendingProposalId}`,
+      );
       setSteps((prev) => [
         ...prev.slice(0, -1),
         {
@@ -169,7 +177,7 @@ export function AgentDemo() {
           {steps.map((s, i) => (
             <p key={i} className={s.role === "user" ? "text-white/90" : "text-[#c8ecf4]"}>
               <span className="text-[10px] uppercase text-white/40 mr-2">
-                {s.role === "user" ? "You" : "IntentGuard"}
+                {s.role === "user" ? "You" : "Fence"}
               </span>
               {s.text}
             </p>

@@ -12,7 +12,7 @@ import type { ProtectionSummary } from "@/lib/protection-state";
 import { explorerTxUrl } from "@/lib/explorer";
 
 const CONFIRM_MESSAGE =
-  "This will revoke your wallet permission (place and cancel orders) on Injective testnet and end the IntentGuard session on the server. Your bot access code will stop working.\n\nContinue?";
+  "This will revoke your wallet permission (place and cancel orders) on Injective testnet and end the Fence session on the server. Your bot access code will stop working.\n\nContinue?";
 
 export function TurnOffProtectionPanel({
   summary,
@@ -101,7 +101,7 @@ export function TurnOffProtectionPanel({
     <div className="space-y-3">
       {!compact ? (
         <p className="text-xs text-white/50">
-          Removes wallet permission on-chain and ends your IntentGuard session (bot access
+          Removes wallet permission on-chain and ends your Fence session (bot access
           code). This does not replace &quot;End session on this device only&quot; if you only want
           to clear the browser.
         </p>

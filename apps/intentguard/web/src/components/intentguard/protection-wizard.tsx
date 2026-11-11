@@ -14,8 +14,9 @@ import {
 import {
   gatewayCreateSession,
   gatewayExecute,
+  gatewayPropose,
   gatewayGrantStatus,
-  gatewayGrantTxPlan,
+  gatewayGetSession,
   gatewayHealth,
 } from "@/lib/gateway/client";
 import {
@@ -25,7 +26,9 @@ import {
 } from "@/lib/gateway/storage";
 import { fetchHostedStatus } from "@/lib/hosted";
 import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connect";
-import { GrantBroadcastButton } from "@/components/intentguard/grant-broadcast-button";
+import { GrantApprovalPanel } from "@/components/intentguard/grant-approval-panel";
+import { sessionFromGatewayPublicView } from "@/lib/grant/wizard-session-context";
+import type { SessionGrantContext } from "@/lib/grant/grant-plan-validation";
 import { TurnOffProtectionPanel } from "@/components/intentguard/turn-off-protection-panel";
 import { parseGrantStatusJson } from "@/lib/grant-status";
 import { broadcastSendInj } from "@/lib/chain/broadcast-send-inj";
@@ -74,7 +77,7 @@ export function ProtectionWizard({
   const [error, setError] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [granteeInj, setGranteeInj] = useState<string | null>(null);
-  const [grantTxJson, setGrantTxJson] = useState<string | null>(null);
+  const [signSession, setSignSession] = useState<SessionGrantContext | null>(null);
   const [grantReady, setGrantReady] = useState(false);
   const [gasTx, setGasTx] = useState<string | null>(null);
   const [executeEnabled, setExecuteEnabled] = useState(false);
@@ -147,10 +150,6 @@ export function ProtectionWizard({
           }
         });
       }
-      const planRes = await gatewayGrantTxPlan(merged, sid);
-      if (planRes.res.ok) {
-        setGrantTxJson(JSON.stringify(planRes.json, null, 2));
-      }
     })();
   }, []);
 
@@ -209,13 +208,24 @@ export function ProtectionWizard({
       ? SPIKE_MARKET_ID
       : selectedMarkets[0]!;
     try {
-      const { res, json } = await gatewayExecute(settings, {
+      const intent = {
         marketId,
         margin: "2",
         leverage: 2,
         price: "1",
         quantity: "2",
-      });
+      };
+      const prop = await gatewayPropose(settings, intent);
+      const proposalId = (prop.json as { proposalId?: string }).proposalId;
+      if (!prop.res.ok || !proposalId) {
+        setError(formatExecuteFeedback(prop.json, prop.res.status));
+        return;
+      }
+      const { res, json } = await gatewayExecute(
+        settings,
+        { intent, proposalId },
+        `wizard-${proposalId}`,
+      );
       if (!res.ok) {
         setError(formatExecuteFeedback(json, res.status));
         return;
@@ -274,10 +284,6 @@ export function ProtectionWizard({
       };
       persistSummary(summaryBase);
 
-      const planRes = await gatewayGrantTxPlan(settings, raw.session.sessionId);
-      if (planRes.res.ok) {
-        setGrantTxJson(JSON.stringify(planRes.json, null, 2));
-      }
       setStep("sign");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -321,6 +327,23 @@ export function ProtectionWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, sessionId]);
 
+  useEffect(() => {
+    if (step !== "sign" || !sessionId) {
+      setSignSession(null);
+      return;
+    }
+    let cancelled = false;
+    void gatewayGetSession(settings, sessionId).then(({ res, json }) => {
+      if (cancelled || !res.ok) return;
+      const view = (json as { session: Parameters<typeof sessionFromGatewayPublicView>[0] })
+        .session;
+      setSignSession(sessionFromGatewayPublicView(view));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, sessionId, settings]);
+
   const marketLabels = selectedMarkets
     .map((id) => TESTNET_PERP_MARKETS.find((m) => m.id === id)?.symbol ?? "market")
     .join(", ");
@@ -334,7 +357,7 @@ export function ProtectionWizard({
           <h2 className="text-lg text-white">Understand protection</h2>
           <div className="space-y-4 text-white/80 text-sm leading-relaxed">
             <p>
-              Unrestricted bot permissions can trade any size on any market. IntentGuard lets you cap
+              Unrestricted bot permissions can trade any size on any market. Fence lets you cap
               what an AI or bot can do on <strong className="text-white">Injective testnet</strong>{" "}
               — every order is checked against your rules before it reaches the exchange.
             </p>
@@ -488,33 +511,25 @@ export function ProtectionWizard({
       {step === "sign" && (
         <>
           <h2 className="text-lg text-white">Approve permissions</h2>
-          <div className="text-white/75 text-sm space-y-2 border border-white/15 rounded-lg p-3 bg-black/25">
-            <p className="text-xs uppercase tracking-wide text-[#75bfcf]">You are approving</p>
-            <p>
-              A dedicated <strong>assistant wallet</strong> may place{" "}
-              <strong>limited derivative orders</strong> and <strong>cancel orders</strong> on your
-              behalf for: <strong>{marketLabels}</strong>.
-            </p>
-            <ul className="text-xs text-white/60 list-disc list-inside space-y-0.5">
-              <li>Max order size: {maxOrder} USDT (price × quantity)</li>
-              <li>Daily margin limit: {dailyBudget}</li>
-              <li>Max leverage: {maxLeverage}×</li>
-              <li>
-                Expires: {grantExpirySeconds === 604_800 ? "7 days" : "24 hours"}
-              </li>
-            </ul>
-            <p className="text-[11px] text-white/45">
-              IntentGuard still checks every trade against these caps before anything is sent to the
-              exchange. Permission is not active until Keplr confirms on-chain.
-            </p>
-          </div>
-          {grantTxJson && ownerInj && (
-            <GrantBroadcastButton
-              ownerInjectiveAddress={ownerInj}
-              grantTxPlanJson={grantTxJson}
+          <p className="text-white/60 text-sm">
+            Markets: <strong>{marketLabels}</strong>. Use the same approval flow as Owner Console —
+            confirm on-chain expiry, review scope, then approve in Keplr.
+          </p>
+          {signSession && ownerInj.startsWith("inj1") ? (
+            <GrantApprovalPanel
+              settings={settings}
+              connectedWallet={ownerInj}
               network="testnet"
-              onSuccess={() => void refreshGrantStatus()}
+              session={signSession}
+              initialExpirySeconds={grantExpirySeconds}
+              onAfterBroadcast={() => void refreshGrantStatus()}
             />
+          ) : (
+            <p className="text-amber-200/90 text-sm">
+              {ownerInj.startsWith("inj1")
+                ? "Loading session details for grant approval…"
+                : "Connect your Injective wallet to continue."}
+            </p>
           )}
           <p className="text-xs text-white/50">
             Wallet permission:{" "}
@@ -539,11 +554,21 @@ export function ProtectionWizard({
           <h2
             className={`text-lg ${grantReady ? "text-green-300" : "text-amber-200"}`}
           >
-            {grantReady ? "Confirmation — protection active" : "Confirmation — finish wallet approval"}
+            {grantReady
+              ? "Confirmation — wallet permission active"
+              : "Confirmation — finish wallet approval"}
           </h2>
           <p className="text-white/80 text-sm">
             Rules saved for {marketLabels}. Max order {maxOrder}, daily margin limit {dailyBudget},
             leverage ≤ {maxLeverage}.
+            {grantReady ? (
+              <>
+                {" "}
+                Fence still enforces policy at execute time — deposit the{" "}
+                <strong>market quote asset</strong> (e.g. USDC) into your Helix subaccount before
+                live test orders.
+              </>
+            ) : null}
             {!grantReady ? (
               <>
                 {" "}

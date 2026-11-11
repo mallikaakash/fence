@@ -6,6 +6,7 @@ import { gatewayHealth } from "@/lib/gateway/client";
 import type { GatewayHealthJson } from "@/lib/gateway/health-types";
 import { loadGatewaySettings, saveGatewaySettings } from "@/lib/gateway/storage";
 import { TestnetResourcesCallout } from "@/components/intentguard/testnet-resources-callout";
+import { SessionExecuteReadiness } from "@/components/intentguard/session-execute-readiness";
 
 export function ExecuteReadinessPanel() {
   const [health, setHealth] = useState<GatewayHealthJson | null>(null);
@@ -40,6 +41,7 @@ export function ExecuteReadinessPanel() {
         <li>Wallet permission must be active (check grant status in operator tools)</li>
         <li>Helix testnet margin required for real fills</li>
       </ul>
+      <SessionExecuteReadiness compact />
       <TestnetResourcesCallout />
     </div>
   );

@@ -43,9 +43,18 @@ const { json } = await client.propose(intent, {
 
 OpenAPI: `GET /v1/openapi.json` (schemas for `ProposeResponse`, `ExecuteResponse`, `TradeIntent`).
 
+## Propose → execute binding (Phase 2A.3)
+
+1. `POST /v1/propose` — on `status: allowed`, capture `proposalId` and `proposalExpiresAt`.
+2. `POST /v1/execute` with body `{ "proposalId", "intent" }` — **intent must match** the approved fingerprint (same fields as propose).
+3. Header **`Idempotency-Key` required** on execute (1–128 printable ASCII). Same session + key + payload replays the stored outcome.
+
+See [INTENTGUARD-EXECUTE-SAFETY.md](./INTENTGUARD-EXECUTE-SAFETY.md) for state machine, `broadcast_unknown`, and **single-instance** concurrency limits.
+
 ## Idempotency
 
-Send header `Idempotency-Key: <unique>` on `POST /v1/propose`. Same session + key returns the first response within 1 hour (`idempotentReplay: true`).
+- **Propose:** optional `Idempotency-Key` — same session + key returns the first response within 1 hour (`idempotentReplay: true`), including the same `proposalId` when stored.
+- **Execute:** **required** `Idempotency-Key` — prevents duplicate broadcasts; see execute safety doc.
 
 ## Webhooks (optional)
 
@@ -71,8 +80,13 @@ const client = createGatewayClient({
 });
 
 await client.agentSession();
-await client.propose({ marketId: DEFAULT_INJ_PERP_MARKET_ID, margin: "2", leverage: 2 });
-await client.execute({ ... });
+const { json: prop } = await client.propose(
+  { marketId: DEFAULT_INJ_PERP_MARKET_ID, margin: "2", leverage: 2, price: "10", quantity: "0.1" },
+);
+await client.execute(
+  { proposalId: prop.proposalId, intent: { /* same intent */ } },
+  { idempotencyKey: "attempt-1" },
+);
 ```
 
 Examples: `apps/intentguard/examples/` (`agent-bot.mjs`, `agent-curl.sh`).

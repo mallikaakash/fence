@@ -221,6 +221,27 @@ export function validateGatewayDeployScripts(repoRoot: string): GatewayDeployIss
     }
   }
 
+  const gcloudignore = join(repoRoot, "apps/intentguard/.gcloudignore");
+  if (!existsSync(gcloudignore)) {
+    issues.push({
+      severity: "error",
+      file: "apps/intentguard/.gcloudignore",
+      message:
+        "missing .gcloudignore — Cloud Build must not upload .env.deploy, node_modules, or .next",
+    });
+  } else {
+    const ig = readFileSync(gcloudignore, "utf8");
+    for (const needle of [".env.deploy", "node_modules", ".spike"]) {
+      if (!ig.includes(needle)) {
+        issues.push({
+          severity: "warn",
+          file: gcloudignore,
+          message: `.gcloudignore should exclude ${needle}`,
+        });
+      }
+    }
+  }
+
   const deploySh = join(repoRoot, "scripts/deploy-intentguard-gcp.sh");
   if (existsSync(deploySh)) {
     const content = readFileSync(deploySh, "utf8");
@@ -233,6 +254,17 @@ export function validateGatewayDeployScripts(repoRoot: string): GatewayDeployIss
         file: deploySh,
         message:
           "gateway deploy must set INTENTGUARD_REQUIRE_GCS_STATE=1 (native GCS state — see docs/STATE-PERSISTENCE-GCS-DESIGN.md)",
+      });
+    }
+    if (
+      /gcloud run deploy "\$GW_SERVICE"/.test(content) &&
+      !/INTENTGUARD_REQUIRE_EXECUTE_READINESS=1/.test(content)
+    ) {
+      issues.push({
+        severity: "warn",
+        file: deploySh,
+        message:
+          "gateway deploy should set INTENTGUARD_REQUIRE_EXECUTE_READINESS=1 for hosted execute safety",
       });
     }
     if (

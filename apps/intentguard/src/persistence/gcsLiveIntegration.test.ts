@@ -43,7 +43,7 @@ async function bucketVersioningEnabled(): Promise<boolean | null> {
   }
 }
 
-describe("GCS live integration", { skip: !runLive }, () => {
+describe("GCS live integration", { skip: !runLive, concurrency: 1 }, () => {
   before(async () => {
     await assertLiveGcsPreflight(bucket);
   });
@@ -247,19 +247,26 @@ describe("GCS live integration", { skip: !runLive }, () => {
   });
 
   it("live — invalid bucket surfaces error (no production bucket)", async () => {
-    const fakeBucket = `intentguard-live-invalid-${randomUUID()}`;
+    /** Underscores are invalid in GCS bucket names — reject before any write. */
+    const fakeBucket = `intentguard_live_invalid_${randomUUID()}`;
     assert.notEqual(fakeBucket, bucket);
+    const objectName = newLiveTestObjectName();
     const object = await createNodeGcsObjectAdapter({
       bucket: fakeBucket,
-      objectName: newLiveTestObjectName(),
+      objectName,
     });
-    /** Missing object returns null; a write to a non-existent bucket must fail closed. */
+  /** Missing object returns null; a write must fail closed (invalid bucket or denied). */
     assert.equal(await object.getMetadata(), null);
     await assert.rejects(
       () => object.save(Buffer.from("{}"), { ifGenerationMatch: 0 }),
       (e) => {
-        const err = e as { code?: number };
-        return err.code === 404 || err.code === 403;
+        if (e instanceof StateGenerationConflictError || e instanceof StateFencingError) {
+          return false;
+        }
+        const err = e as { code?: number; message?: string };
+        if (err.code === 404 || err.code === 403 || err.code === 400) return true;
+        const msg = String(err.message ?? e);
+        return /not found|invalid|denied|bucket/i.test(msg);
       },
     );
   });
@@ -267,19 +274,22 @@ describe("GCS live integration", { skip: !runLive }, () => {
   it("live — malformed JSON on object fails load", async () => {
     const objectName = newLiveTestObjectName();
     createdObjects.add(objectName);
-    const object = await createNodeGcsObjectAdapter({
-      bucket: bucket!,
-      objectName,
-    });
-    await object.save(Buffer.from("{ not-json"), { ifGenerationMatch: 0 });
-    const store = new GcsConditionalStateStore({
-      object,
-      dataKey: null,
-      holderId: "live-bad-json",
-    });
-    await assert.rejects(() => store.load(), StatePersistenceError);
-    await deleteTestObject(objectName);
-    createdObjects.delete(objectName);
+    try {
+      const object = await createNodeGcsObjectAdapter({
+        bucket: bucket!,
+        objectName,
+      });
+      await object.save(Buffer.from("{ not-json"), { ifGenerationMatch: 0 });
+      const store = new GcsConditionalStateStore({
+        object,
+        dataKey: null,
+        holderId: "live-bad-json",
+      });
+      await assert.rejects(() => store.load(), StatePersistenceError);
+    } finally {
+      await deleteTestObject(objectName);
+      createdObjects.delete(objectName);
+    }
   });
 });
 

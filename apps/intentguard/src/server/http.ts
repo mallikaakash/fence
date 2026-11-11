@@ -17,6 +17,8 @@ import { assessSessionReadiness } from "../readiness/assessSessionReadiness.ts";
 import { ReadinessNetworkRejectedError } from "../readiness/network.ts";
 import { assessSessionExposure } from "../exposure/assessSessionExposure.ts";
 import { buildGrantTxPlan } from "../authz/buildGrantTx.ts";
+import { resolveGrantExpirySeconds } from "../authz/grantExpiry.ts";
+import { validateGrantTxPlanAgainstSession } from "../authz/validateGrantTxPlan.ts";
 import { safeEqual } from "./auth.ts";
 import { RateLimiter } from "./rateLimit.ts";
 import { INTENTGUARD_VERSION } from "./version.ts";
@@ -267,6 +269,7 @@ export function startGatewayServer() {
       if (req.method === "GET" && path === "/health") {
         return send(req, res, 200, {
           ok: true,
+          productName: "Fence",
           service: "intentguard-gateway",
           version: INTENTGUARD_VERSION,
           executeEnabled: config.executeEnabled,
@@ -277,6 +280,7 @@ export function startGatewayServer() {
           stateLocation: store?.location,
           network: config.network,
           requireOnChainGrant: config.requireOnChainGrant,
+          requireExecuteReadiness: config.requireExecuteReadiness,
           encryptionAtRest: Boolean(config.dataKey),
           sessions: gateway.exportSessions().length,
           requestId,
@@ -286,6 +290,7 @@ export function startGatewayServer() {
       if (req.method === "GET" && path === "/health/live") {
         return send(req, res, 200, {
           ok: !shuttingDown,
+          productName: "Fence",
           service: "intentguard-gateway",
         });
       }
@@ -559,21 +564,56 @@ export function startGatewayServer() {
             error: "session missing ownerInjectiveAddress or subaccountId",
           });
         }
+        const expRaw = url.searchParams.get("expirySeconds");
+        const queryExpiry =
+          expRaw != null && expRaw.trim() !== "" ? Number(expRaw) : null;
+        const resolved = resolveGrantExpirySeconds({
+          queryExpirySeconds: queryExpiry,
+          sessionGrantExpirySeconds: session.grantExpirySeconds,
+        });
+        if (!resolved.ok) {
+          return send(req, res, 400, {
+            error: resolved.error,
+            code: resolved.code,
+          });
+        }
         const plan = planTradingGrant({
           granteeAddress: session.granteeAddress,
           subaccountId: session.subaccountId,
           policy: session.policy,
-          expirySeconds: session.grantExpirySeconds,
+          expirySeconds: resolved.expirySeconds,
         });
         const txPlan = buildGrantTxPlan({
           granter: session.ownerInjectiveAddress,
           grantee: session.granteeAddress,
           plan,
         });
+        const validation = validateGrantTxPlanAgainstSession({
+          sessionId: id,
+          ownerInjectiveAddress: session.ownerInjectiveAddress,
+          granteeAddress: session.granteeAddress,
+          subaccountId: session.subaccountId,
+          policy: session.policy,
+          grantPlan: plan,
+          txPlan: {
+            expirationUnix: txPlan.expirationUnix,
+            expirationIso: txPlan.expirationIso,
+            msgGrants: txPlan.msgGrants as import("../authz/validateGrantTxPlan.ts").WireMsgGrant[],
+          },
+        });
+        if (!validation.ok) {
+          return send(req, res, 500, {
+            error: "grant tx plan failed validation",
+            issues: validation.errors,
+          });
+        }
         return send(req, res, 200, {
           sessionId: id,
           grantPlan: plan,
           txPlan,
+          expirySeconds: resolved.expirySeconds,
+          planGeneratedAt: new Date().toISOString(),
+          expiryTimezone: "UTC (expirationIso is on-chain authz expiry)",
           scopeNote:
             "v0: derivative limit + cancel only — gateway enforces notional/leverage",
         });
@@ -744,6 +784,7 @@ export function startGatewayServer() {
               executionMaintenance: config.executionMaintenance,
               ownerPrivateKeyHex: config.ownerPrivateKeyHex,
               requireOnChainGrant: config.requireOnChainGrant,
+              requireExecuteReadiness: config.requireExecuteReadiness,
               network: config.network,
             },
             persistNow,
@@ -876,7 +917,7 @@ export function startGatewayServer() {
 
   server.listen(config.port, config.bindHost, () => {
     console.log(
-      `IntentGuard gateway listening on http://${config.bindHost}:${config.port}`,
+      `Fence gateway listening on http://${config.bindHost}:${config.port}`,
     );
     console.log(`Data: ${config.dataDir}`);
     console.log(`OpenAPI: http://127.0.0.1:${config.port}/v1/openapi.json`);

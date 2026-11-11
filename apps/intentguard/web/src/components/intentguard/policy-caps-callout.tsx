@@ -5,7 +5,7 @@ export function PolicyCapsCallout({ defaultOpen = false }: { defaultOpen?: boole
       open={defaultOpen}
     >
       <summary className="cursor-pointer px-4 py-3 text-[#75bfcf] text-xs uppercase tracking-[0.2em] font-medium list-none">
-        What IntentGuard caps (and what it does not) ▾
+        What Fence caps (and what it does not) ▾
       </summary>
       <div className="px-4 pb-4 space-y-2 border-t border-white/10 pt-3 text-white/65 text-xs leading-relaxed">
         <p>

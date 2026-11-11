@@ -45,10 +45,22 @@ export async function gatewayCreateSession(
 export async function gatewayGrantTxPlan(
   settings: GatewaySettings,
   sessionId: string,
+  expirySeconds?: number,
 ) {
-  return gwFetch(settings, `/v1/sessions/${sessionId}/grant-tx-plan`, {
+  const q =
+    expirySeconds != null && Number.isFinite(expirySeconds)
+      ? `?expirySeconds=${encodeURIComponent(String(Math.floor(expirySeconds)))}`
+      : "";
+  return gwFetch(settings, `/v1/sessions/${sessionId}/grant-tx-plan${q}`, {
     method: "GET",
   });
+}
+
+export async function gatewayGetSession(
+  settings: GatewaySettings,
+  sessionId: string,
+) {
+  return gwFetch(settings, `/v1/sessions/${sessionId}`, { method: "GET" });
 }
 
 export async function gatewayGrantStatus(
@@ -56,6 +68,26 @@ export async function gatewayGrantStatus(
   sessionId: string,
 ) {
   return gwFetch(settings, `/v1/sessions/${sessionId}/grant-status`, {
+    method: "GET",
+  });
+}
+
+export async function gatewaySessionReadiness(
+  settings: GatewaySettings,
+  sessionId: string,
+  marketId?: string,
+) {
+  const q = marketId ? `?marketId=${encodeURIComponent(marketId)}` : "";
+  return gwFetch(settings, `/v1/sessions/${sessionId}/readiness${q}`, {
+    method: "GET",
+  });
+}
+
+export async function gatewaySessionExposure(
+  settings: GatewaySettings,
+  sessionId: string,
+) {
+  return gwFetch(settings, `/v1/sessions/${sessionId}/exposure`, {
     method: "GET",
   });
 }
@@ -87,11 +119,15 @@ export async function gatewayPropose(
 /** Policy + MsgExec broadcast (requires gateway INTENTGUARD_EXECUTE=1 + owner hex on sidecar). */
 export async function gatewayExecute(
   settings: GatewaySettings,
-  intent: unknown,
+  body: { intent: unknown; proposalId: string },
+  idempotencyKey?: string,
 ) {
   return gwFetch(settings, "/v1/execute", {
     method: "POST",
-    body: JSON.stringify({ intent }),
+    body: JSON.stringify(body),
     useAgent: true,
+    headers: idempotencyKey
+      ? { "idempotency-key": idempotencyKey }
+      : undefined,
   });
 }
