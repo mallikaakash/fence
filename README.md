@@ -14,6 +14,8 @@ Helix holds margin and matches trades. **Fence sits in front of your AI agent** 
 ```
 Agent  →  propose  →  Fence (policy)  →  allow / deny  →  execute (if grant + margin OK)  →  Helix
 ```
+<img width="2190" height="1116" alt="fence-architecture-excalidraw" src="https://github.com/user-attachments/assets/2cd60b20-3dc2-4f8c-a263-cdb944925b93" />
+
 ---
 ## What is live
 - **Web** — setup, session, policy demos, activity, developer tools (Google Cloud Run).
