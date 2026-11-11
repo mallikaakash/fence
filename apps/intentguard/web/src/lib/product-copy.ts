@@ -1,38 +1,40 @@
 /** Canonical user-facing labels — Phase 1 product language. */
 
 export const TESTNET_DISCLOSURE =
-  "Injective testnet — preview only. Practice with test funds. Not investment advice.";
+  "Injective testnet. Practice with test funds only. Not investment advice.";
 
 export const HOSTED_RIBBON =
-  "Injective testnet preview — set protection, connect a bot, and trade within your rules.";
+  "Injective testnet. Set protection, connect a bot, trade within your rules.";
 
 export const NAV = {
   home: "Home",
-  setup: "Set up",
-  dashboard: "Dashboard",
+  setup: "Get started",
+  dashboard: "My session",
+  help: "How it works",
   walletCheck: "Wallet check",
 } as const;
 
 export const FOOTER = {
-  sampleTrade: "Try a sample trade",
-  sampleAi: "Try sample AI phrases",
+  howItWorks: "How it works",
+  walletCheck: "Wallet check",
   activity: "Activity",
-  howItWorks: "How it works & limits",
-  developers: "Developers (API & MCP)",
+  sampleTrade: "Sample trade",
+  sampleAi: "Sample AI demo",
+  developers: "Developers",
 } as const;
 
 export const SETUP_STEPS = [
-  "Understand protection",
+  "Overview",
   "Connect wallet",
-  "Set limits",
-  "Approve permissions",
-  "Confirmation",
+  "Your limits",
+  "Approve in wallet",
+  "All set",
 ] as const;
 
 export const SETUP_STEP_SUBTITLES: Record<number, string> = {
-  0: "Why limits matter on Injective testnet — about three minutes.",
-  1: "Connect Keplr or Leap on Injective testnet.",
-  2: "Choose markets and size limits for any bot or AI.",
-  3: "Review what you approve in your wallet — not active until Keplr confirms.",
-  4: "Your rules are saved — finish optional steps on the Dashboard.",
+  0: "Takes about three minutes. Testnet only.",
+  1: "Keplr or Leap on Injective testnet.",
+  2: "Pick markets and size caps.",
+  3: "Sign what Keplr shows you.",
+  4: "Fund the assistant wallet if you want live test trades.",
 };

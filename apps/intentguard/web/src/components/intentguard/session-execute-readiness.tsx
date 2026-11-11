@@ -49,7 +49,7 @@ export function SessionExecuteReadiness({
         marketId ?? summary.marketIds[0] ?? SPIKE_MARKET_ID,
       );
       if (res.status === 410) {
-        setError("Session ended on the gateway — start setup again.");
+        setError("Session ended on the gateway. Start setup again.");
         setData(null);
         return;
       }
@@ -106,7 +106,7 @@ export function SessionExecuteReadiness({
             {overallHeadline(data.overallStatus)}
           </p>
           <p className="text-[10px] text-white/45">
-            Last checked {new Date(data.checkedAt).toLocaleString()} — readiness does
+            Last checked {new Date(data.checkedAt).toLocaleString()}. Readiness does
             not guarantee a fill or authorize execution by itself.
           </p>
           <ul className="space-y-2">
@@ -145,7 +145,7 @@ export function SessionExecuteReadiness({
           ) : null}
           {data.executeEnabled === false ? (
             <p className="text-amber-200/80 text-[11px]">
-              Live execution is disabled on this gateway — policy checks still apply.
+              Live execution is disabled on this gateway. Policy checks still apply.
             </p>
           ) : null}
         </>

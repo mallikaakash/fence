@@ -2,8 +2,8 @@ import { test, expect } from "@playwright/test";
 
 const PAGES = [
   { path: "/", heading: /Fence/i },
-  { path: "/protection", heading: /Dashboard/i },
-  { path: "/start", heading: /Set up protection/i },
+  { path: "/protection", heading: /My session/i },
+  { path: "/start", heading: /Set up Fence/i },
   { path: "/trade", heading: /Try a sample trade/i },
   { path: "/agent", heading: /Try sample AI phrases/i },
   { path: "/portfolio", heading: /Wallet check/i },
@@ -12,7 +12,7 @@ const PAGES = [
   { path: "/console", heading: /Developers/i },
 ] as const;
 
-const PRIMARY_NAV = ["Home", "Dashboard", "Set up", "Wallet check"];
+const PRIMARY_NAV = ["Home", "Get started", "How it works"];
 
 test.describe("Static pages render", () => {
   for (const { path, heading } of PAGES) {

@@ -6,7 +6,7 @@ export default function ProtectionPage() {
   return (
     <AppShell>
       <InnerPage
-        title="Dashboard"
+        title="My session"
         subtitle="Your limits, bot access code, readiness checklist, and recent activity."
       >
         <ProtectionHub />

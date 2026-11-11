@@ -10,7 +10,7 @@ import { loadGatewaySettings } from "@/lib/gateway/storage";
 import type { ProtectionSummary } from "@/lib/protection-state";
 
 const CONFIRM =
-  "This ends your Fence session and clears the bot access code on this device. It does NOT submit any wallet transaction — use this only if you already revoked permission in Keplr.\n\nContinue?";
+  "This ends your Fence session and clears the bot access code on this device. It does not submit a wallet transaction. Use this only if you already revoked permission in Keplr.\n\nContinue?";
 
 export function SessionCleanupOnlyPanel({
   summary,

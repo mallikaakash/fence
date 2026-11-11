@@ -7,8 +7,8 @@ export default function ConsolePage() {
   return (
     <AppShell>
       <InnerPage
-        title="Developers — API & MCP"
-        subtitle="Integrations, curl, and operator probes. Connect bots on the Dashboard unless you are building an integration."
+        title="Developers (API and MCP)"
+        subtitle="Integrations, curl, and operator probes. Connect bots on My session unless you are building an integration."
       >
         <div className="space-y-6">
           <DevelopersLandingCard />

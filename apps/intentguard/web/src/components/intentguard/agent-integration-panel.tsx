@@ -58,7 +58,7 @@ Docs: repo docs/AGENT-INTEGRATION.md`;
       <div>
         <h2 className="text-lg font-medium text-[#75bfcf]">Connect your agent</h2>
         <p className="text-sm text-white/65 mt-1">
-          After Protect, the browser saves your session token. Use it in MCP, scripts, or backends — not
+          After setup, the browser saves your session token. Use it in MCP, scripts, or backends, not
           your seed phrase or grantee key.
         </p>
       </div>

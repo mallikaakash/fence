@@ -11,7 +11,7 @@ export function AdvancedConsoleShell() {
           <span className="text-[#75bfcf] uppercase text-[10px] tracking-wide block mb-0.5">
             Advanced
           </span>
-          Operator console — sessions, keys, health probes
+          Operator console: sessions, keys, health probes
         </span>
         <span className="text-white/40 text-xs group-open:rotate-180 transition-transform">▼</span>
       </summary>

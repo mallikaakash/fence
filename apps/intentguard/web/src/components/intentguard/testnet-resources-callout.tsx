@@ -6,11 +6,9 @@ import {
 
 export function TestnetResourcesCallout() {
   return (
-    <div className="border border-white/10 rounded-xl p-4 bg-black/25 text-xs text-white/65 space-y-2">
-      <p className="text-white/80 font-medium uppercase tracking-wide text-[10px]">
-        Testnet resources
-      </p>
-      <ul className="space-y-1 list-disc list-inside">
+    <div className="border border-white/15 rounded-xl p-4 bg-black/25 text-sm text-white/70 space-y-2">
+      <p className="text-white/85 font-medium">Testnet funding</p>
+      <ul className="space-y-2 list-disc list-inside text-xs text-white/60">
         <li>
           <a
             href={INJECTIVE_TESTNET_FAUCET_URL}
@@ -18,9 +16,9 @@ export function TestnetResourcesCallout() {
             rel="noreferrer"
             className="text-[#75bfcf] underline"
           >
-            Injective testnet faucet
-          </a>{" "}
-          — INJ for gas (owner + assistant)
+            Injective faucet
+          </a>
+          : INJ for gas on your wallet and the assistant wallet.
         </li>
         <li>
           <a
@@ -29,15 +27,15 @@ export function TestnetResourcesCallout() {
             rel="noreferrer"
             className="text-[#75bfcf] underline"
           >
-            Google Cloud Injective faucet
-          </a>{" "}
-          — alternate if the primary faucet is busy
+            Google Cloud faucet
+          </a>
+          : use if the main faucet is slow or empty.
         </li>
         <li>
           <a href={HELIX_TESTNET_URL} target="_blank" rel="noreferrer" className="text-[#75bfcf] underline">
             Helix testnet
-          </a>{" "}
-          — deposit USDT margin (same wallet as Protect)
+          </a>
+          : deposit USDT margin with the same wallet you used in setup.
         </li>
       </ul>
     </div>

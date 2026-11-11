@@ -5,14 +5,14 @@ import Link from "next/link";
 /** gtm:verify — primary user path (hosted testnet). */
 const steps = [
   {
-    title: "Protect",
-    body: "Keplr + limits + timed typed grant.",
+    title: "Setup",
+    body: "Keplr, limits, timed grant.",
     href: "/start",
-    cta: "Open Protect",
+    cta: "Open setup",
   },
   {
     title: "Try limits",
-    body: "Allow/deny sample trades against your session.",
+    body: "Allow or deny sample trades against your session.",
     href: "/trade",
     cta: "Try limits",
   },
@@ -34,11 +34,11 @@ export function OnboardingChecklist() {
         >
           <div>
             <span className="text-white/40 text-xs mr-2">{i + 1}.</span>
-            <strong className="text-white">{s.title}</strong>
-            <span className="text-white/55"> — {s.body}</span>
+            <strong className="text-white">{s.title}.</strong>{" "}
+            <span className="text-white/55">{s.body}</span>
           </div>
           <Link href={s.href} className="text-[#75bfcf] text-xs underline shrink-0">
-            {s.cta} →
+            {s.cta}
           </Link>
         </li>
       ))}

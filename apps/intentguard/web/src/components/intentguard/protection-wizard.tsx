@@ -29,6 +29,7 @@ import { OwnerWalletConnect } from "@/components/intentguard/owner-wallet-connec
 import { GrantApprovalPanel } from "@/components/intentguard/grant-approval-panel";
 import { sessionFromGatewayPublicView } from "@/lib/grant/wizard-session-context";
 import type { SessionGrantContext } from "@/lib/grant/grant-plan-validation";
+import { SetupBeforeYouStart } from "@/components/intentguard/setup-before-you-start";
 import { TurnOffProtectionPanel } from "@/components/intentguard/turn-off-protection-panel";
 import { parseGrantStatusJson } from "@/lib/grant-status";
 import { broadcastSendInj } from "@/lib/chain/broadcast-send-inj";
@@ -42,9 +43,14 @@ import {
   loadWalletPreset,
   type PolicyPresetId,
 } from "@/lib/protection-state";
-import { SETUP_STEPS } from "@/lib/product-copy";
+import { NAV, SETUP_STEPS } from "@/lib/product-copy";
 
 export type WizardStep = "intro" | "connect" | "limits" | "sign" | "done";
+
+const WIZARD_STEP_ORDER: WizardStep[] = ["intro", "connect", "limits", "sign", "done"];
+
+const WIZARD_CONTINUE =
+  "cta-primary text-sm font-medium disabled:opacity-40 disabled:cursor-not-allowed";
 
 const GRANT_EXPIRY_OPTIONS: { label: string; seconds: number }[] = [
   { label: "24 hours", seconds: 86_400 },
@@ -350,29 +356,20 @@ export function ProtectionWizard({
 
   return (
     <div className="border border-white/15 rounded-2xl bg-white/5 p-6 md:p-8 space-y-6">
-      <StepBar step={step} />
+      <StepProgress step={step} />
 
       {step === "intro" && (
         <>
-          <h2 className="text-lg text-white">Understand protection</h2>
           <div className="space-y-4 text-white/80 text-sm leading-relaxed">
+            <SetupBeforeYouStart />
             <p>
-              Unrestricted bot permissions can trade any size on any market. Fence lets you cap
-              what an AI or bot can do on <strong className="text-white">Injective testnet</strong>{" "}
-              — every order is checked against your rules before it reaches the exchange.
+              Fence blocks bot orders that break your rules. You approve access in Keplr or Leap. We do not
+              ask for your seed phrase. You can revoke in the wallet at any time.
             </p>
-            <ul className="list-disc list-inside text-white/60 space-y-1 text-xs">
-              <li>You approve a timed wallet permission in Keplr or Leap — we never see your seed phrase.</li>
-              <li>You can revoke anytime; permissions expire automatically.</li>
-            </ul>
             {revoked && (
-              <p className="text-green-300/90 text-xs">Protection turned off. Start again when ready.</p>
+              <p className="text-green-300/90 text-xs">Previous session was cleared. Start again when ready.</p>
             )}
-            <button
-              type="button"
-              className="w-full md:w-auto px-6 py-3 rounded-md bg-orange-400 text-black font-medium"
-              onClick={() => setStep("connect")}
-            >
+            <button type="button" className={`w-full md:w-auto ${WIZARD_CONTINUE}`} onClick={() => setStep("connect")}>
               Continue
             </button>
           </div>
@@ -395,20 +392,18 @@ export function ProtectionWizard({
               Install Keplr and enable <strong>Injective testnet</strong>.
             </p>
           )}
-          <button
-            type="button"
-            disabled={!ownerInj.startsWith("inj1")}
-            className="px-6 py-2 rounded-full bg-[#75bfcf] text-black disabled:opacity-40"
-            onClick={() => setStep("limits")}
-          >
-            Continue
-          </button>
+          <WizardNav
+            step={step}
+            setStep={setStep}
+            continueDisabled={!ownerInj.startsWith("inj1")}
+            onContinue={() => setStep("limits")}
+          />
         </>
       )}
 
       {step === "limits" && (
         <>
-          <h2 className="text-lg text-white">Your trading limits</h2>
+          <h2 className="text-lg text-white">Your limits</h2>
           <p className="text-white/55 text-xs">
             Trades above your max order size or outside selected markets are blocked before they reach
             the exchange.
@@ -458,7 +453,7 @@ export function ProtectionWizard({
           </div>
 
           <LimitField
-            label="Max order size (USDT — price × quantity)"
+            label="Max order size (USDT, price times quantity)"
             value={maxOrder}
             onChange={(v) => {
               setMaxOrder(v);
@@ -497,23 +492,22 @@ export function ProtectionWizard({
             </select>
           </label>
 
-          <button
-            type="button"
-            disabled={busy}
-            className="px-6 py-2 rounded-full bg-orange-400 text-black disabled:opacity-40"
-            onClick={() => void activateProtection()}
-          >
-            {busy ? "Saving…" : "Save and continue"}
-          </button>
+          <WizardNav
+            step={step}
+            setStep={setStep}
+            continueDisabled={busy}
+            continueLabel={busy ? "Saving…" : "Save and continue"}
+            onContinue={() => void activateProtection()}
+          />
         </>
       )}
 
       {step === "sign" && (
         <>
-          <h2 className="text-lg text-white">Approve permissions</h2>
+          <h2 className="text-lg text-white">Approve in your wallet</h2>
           <p className="text-white/60 text-sm">
-            Markets: <strong>{marketLabels}</strong>. Use the same approval flow as Owner Console —
-            confirm on-chain expiry, review scope, then approve in Keplr.
+            Markets: <strong>{marketLabels}</strong>. In Keplr or Leap, review the expiry and scoped
+            trading access, then approve.
           </p>
           {signSession && ownerInj.startsWith("inj1") ? (
             <GrantApprovalPanel
@@ -538,25 +532,17 @@ export function ProtectionWizard({
             </span>
           </p>
           {grantReady ? (
-            <button
-              type="button"
-              className="px-6 py-2 rounded-full bg-[#75bfcf] text-black text-sm font-medium"
-              onClick={() => setStep("done")}
-            >
-              Continue
-            </button>
-          ) : null}
+            <WizardNav step={step} setStep={setStep} onContinue={() => setStep("done")} />
+          ) : (
+            <WizardNav step={step} setStep={setStep} hideContinue />
+          )}
         </>
       )}
 
       {step === "done" && (
         <>
-          <h2
-            className={`text-lg ${grantReady ? "text-green-300" : "text-amber-200"}`}
-          >
-            {grantReady
-              ? "Confirmation — wallet permission active"
-              : "Confirmation — finish wallet approval"}
+          <h2 className={`text-lg ${grantReady ? "text-green-300" : "text-amber-200"}`}>
+            {grantReady ? "Wallet approved" : "Waiting for Keplr"}
           </h2>
           <p className="text-white/80 text-sm">
             Rules saved for {marketLabels}. Max order {maxOrder}, daily margin limit {dailyBudget},
@@ -564,7 +550,7 @@ export function ProtectionWizard({
             {grantReady ? (
               <>
                 {" "}
-                Fence still enforces policy at execute time — deposit the{" "}
+                Fence still checks each trade at execute time. Deposit the{" "}
                 <strong>market quote asset</strong> (e.g. USDC) into your Helix subaccount before
                 live test orders.
               </>
@@ -579,7 +565,7 @@ export function ProtectionWizard({
           <ProtectionLiveStatus />
           <ol className="text-white/60 text-xs list-decimal list-inside space-y-2 border border-white/10 rounded-lg p-3">
             <li>
-              Send testnet INJ to assistant wallet (~0.2 INJ) —{" "}
+              Send testnet INJ to the assistant wallet (about 0.2 INJ).{" "}
               <button
                 type="button"
                 disabled={busy || !granteeInj}
@@ -633,16 +619,10 @@ export function ProtectionWizard({
             </p>
           )}
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/protection"
-              className="px-5 py-2 rounded-full bg-[#75bfcf] text-black text-sm font-medium"
-            >
-              Go to dashboard
+            <Link href="/protection" className={WIZARD_CONTINUE}>
+              Open {NAV.dashboard.toLowerCase()}
             </Link>
-            <Link
-              href="/trade"
-              className="px-5 py-2 rounded-full border border-white/30 text-white text-sm"
-            >
+            <Link href="/trade" className="cta-secondary text-sm">
               Practice a trade
             </Link>
           </div>
@@ -679,21 +659,52 @@ export function ProtectionWizard({
   );
 }
 
-function StepBar({ step }: { step: WizardStep }) {
-  const order: WizardStep[] = ["intro", "connect", "limits", "sign", "done"];
-  const idx = order.indexOf(step);
+function StepProgress({ step }: { step: WizardStep }) {
+  const idx = WIZARD_STEP_ORDER.indexOf(step);
+  const label = SETUP_STEPS[idx] ?? SETUP_STEPS[0];
   return (
-    <div className="flex gap-2 flex-wrap">
-      {SETUP_STEPS.map((label, i) => (
-        <span
-          key={label}
-          className={`text-[10px] uppercase tracking-wide px-2 py-0.5 rounded-full border ${
-            i <= idx ? "border-[#75bfcf]/50 text-[#75bfcf]" : "border-white/15 text-white/35"
-          }`}
+    <p className="text-sm text-white/55" aria-live="polite">
+      Step <span className="text-white/90 font-medium">{idx + 1}</span> of {SETUP_STEPS.length}
+      <span className="text-white/30 mx-1.5">·</span>
+      <span className="text-[#75bfcf]">{label}</span>
+    </p>
+  );
+}
+
+function WizardNav({
+  step,
+  setStep,
+  onContinue,
+  continueDisabled,
+  continueLabel = "Continue",
+  hideContinue,
+}: {
+  step: WizardStep;
+  setStep: (s: WizardStep) => void;
+  onContinue?: () => void;
+  continueDisabled?: boolean;
+  continueLabel?: string;
+  hideContinue?: boolean;
+}) {
+  const idx = WIZARD_STEP_ORDER.indexOf(step);
+  const prev = idx > 0 ? WIZARD_STEP_ORDER[idx - 1] : null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-3 pt-1">
+      {prev ? (
+        <button
+          type="button"
+          className="text-xs text-white/50 hover:text-white/80 underline-offset-2 hover:underline"
+          onClick={() => setStep(prev)}
         >
-          {label}
-        </span>
-      ))}
+          Back
+        </button>
+      ) : null}
+      {!hideContinue && onContinue ? (
+        <button type="button" disabled={continueDisabled} className={WIZARD_CONTINUE} onClick={onContinue}>
+          {continueLabel}
+        </button>
+      ) : null}
     </div>
   );
 }

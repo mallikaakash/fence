@@ -222,7 +222,7 @@ export function GrantApprovalPanel({
       )}
 
       <section className="space-y-2">
-        <h3 className="text-xs text-white/70 font-medium">1 — On-chain grant expiry</h3>
+        <h3 className="text-xs text-white/70 font-medium">1. Grant expiry (on-chain)</h3>
         <p className="text-[10px] text-white/45">
           This is the Injective AuthZ authorization expiry (not the Fence policy clock). Times
           below use your browser timezone ({localTz}); ISO timestamps are UTC. Now: {nowLabel}
@@ -351,8 +351,8 @@ export function GrantApprovalPanel({
             Re-check grant-status
           </button>
           <p className="text-white/40">
-            A transaction hash does not prove both authorizations exist — wait for independent
-            grant-status verification.
+            A transaction hash does not prove both authorizations exist. Wait for grant-status
+            verification.
           </p>
         </section>
       )}
@@ -374,7 +374,7 @@ function phaseLabel(phase: GrantVerificationPhase): string {
     case "verified_ready":
       return "both auths OK · gateway ready";
     case "verified_partial":
-      return "partial — only one authorization on-chain";
+      return "partial (one authorization on-chain)";
     case "verification_unavailable":
       return "verification unavailable";
     case "broadcast_unknown":
@@ -405,13 +405,13 @@ function OnChainVsGatewaySummary({
       <div className="border border-amber-400/20 rounded p-2 bg-amber-400/5">
         <p className="text-amber-200/90 uppercase tracking-wide mb-1">Gateway policy (off-chain)</p>
         <ul className="text-white/60 list-disc list-inside space-y-0.5">
-          <li>maxOrderNotional: {policy.maxOrderNotional ?? "—"}</li>
+          <li>maxOrderNotional: {policy.maxOrderNotional ?? "n/a"}</li>
           <li>maxMarginPerOrder: {policy.maxMarginPerOrder}</li>
           <li>maxLeverage: {policy.maxLeverage}×</li>
           <li>dailyMarginBudget: {policy.dailyMarginBudget}</li>
         </ul>
         <p className="text-white/40 mt-1">
-          Injective AuthZ does not encode these limits — Fence enforces them before execute.
+          Injective AuthZ does not encode these limits. Fence enforces them before execute.
         </p>
       </div>
     </div>

@@ -86,19 +86,19 @@ export function runGtmVerifyChecks(paths: GtmVerifyPaths): GtmCheckResult[] {
       "start page should not import wizard directly (use SetupPageClient)",
     );
     const setup = readUtf8(web, "components/intentguard/setup-page-client.tsx");
-    mustMatch(setup, /SETUP_STEPS/, "setup flow uses canonical SETUP_STEPS labels");
     mustMatch(setup, /ProtectionWizard/, "setup embeds protection wizard");
-    mustMatch(setup, /Set up protection/, "setup user-facing title");
+    mustMatch(setup, /Set up \$\{PRODUCT_NAME\}/, "setup user-facing title");
+    const wizard = readUtf8(web, "components/intentguard/protection-wizard.tsx");
+    mustMatch(wizard, /SETUP_STEPS/, "wizard uses canonical SETUP_STEPS labels");
   });
 
   check("site nav primary routes", () => {
     const nav = readUtf8(web, "components/layout/site-nav.tsx");
     mustMatch(nav, /href: "\/start"/, "nav includes setup");
-    mustMatch(nav, /href: "\/protection"/, "nav includes dashboard");
-    mustMatch(nav, /href: "\/portfolio"/, "nav includes wallet check");
+    mustMatch(nav, /href: "\/limitations"/, "nav includes how it works");
     const copy = readUtf8(web, "lib/product-copy.ts");
-    mustMatch(copy, /setup: "Set up"/, "product copy defines setup label");
-    mustMatch(copy, /dashboard: "Dashboard"/, "product copy defines dashboard label");
+    mustMatch(copy, /setup: "Get started"/, "product copy defines setup label");
+    mustMatch(copy, /dashboard: "My session"/, "product copy defines session label");
   });
 
   check("wallet connection in setup wizard", () => {

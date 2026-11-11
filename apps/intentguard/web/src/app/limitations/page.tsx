@@ -10,45 +10,39 @@ export default function LimitationsPage() {
   return (
     <AppShell>
       <InnerPage
-        title="How it works & limits"
-        subtitle="Fence checks every trade against your rules on Injective testnet before it can reach the exchange."
+        compact
+        title="How it works"
+        subtitle="Fence checks each trade against your rules on Injective testnet before it reaches the exchange."
       >
         <div className="space-y-6">
-          <ol className="text-white/75 text-sm space-y-3 list-decimal list-inside">
+          <ol className="text-white/75 text-sm space-y-3 list-decimal list-inside max-w-2xl">
             <li>
-              <strong className="text-white">Set up</strong> — choose markets and size limits, then
-              approve a timed permission in Keplr.
+              <strong className="text-white">Set up.</strong> Choose markets and size limits, then approve
+              in Keplr or Leap.
             </li>
             <li>
-              <strong className="text-white">Check</strong> — each bot or AI request is allowed or
-              blocked against your rules first.
+              <strong className="text-white">Check.</strong> Each bot request is allowed or blocked against
+              your rules first.
             </li>
             <li>
-              <strong className="text-white">Control</strong> — revoke in Keplr or end your session;
-              your bot only gets a limited access code, not your seed phrase.
+              <strong className="text-white">Control.</strong> Revoke in the wallet or end your session. The
+              bot gets an access code, not your seed phrase.
             </li>
           </ol>
-          <RelatedProductsCallout />
-          <PolicyCapsCallout defaultOpen />
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Link href="/start" className="cta-primary motion-cta text-sm">
+              Start setup
+            </Link>
+            <Link href="/" className="cta-secondary motion-cta text-sm">
+              Back to home
+            </Link>
+          </div>
+
+          <PolicyCapsCallout />
           <TestnetResourcesCallout />
           <RiskDisclosure />
-          <Link
-            href="/start"
-            className="inline-flex px-5 py-2.5 bg-orange-400 text-black rounded-full text-sm font-medium"
-          >
-            Start setup
-          </Link>
-          <p className="text-white/40 text-xs">
-            Technical limitations:{" "}
-            <a
-              className="text-[#75bfcf] underline"
-              href="https://github.com/mallikaakash/injective-buildathon/blob/main/docs/LIMITATIONS.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              docs/LIMITATIONS.md
-            </a>
-          </p>
+          <RelatedProductsCallout />
         </div>
       </InnerPage>
     </AppShell>

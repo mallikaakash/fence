@@ -42,7 +42,7 @@ export function ProtectionReadiness({ refreshKey = 0 }: { refreshKey?: number })
 
     void (async () => {
       let grantReady = false;
-      let grantDetail = "Approve the timed permission in Keplr — not active until confirmed.";
+      let grantDetail = "Approve the timed permission in Keplr. It is not active until confirmed.";
       let executeOn = false;
       let serviceDetail = "Checking hosted service…";
       let readiness: SessionReadinessJson | null = null;
@@ -87,7 +87,7 @@ export function ProtectionReadiness({ refreshKey = 0 }: { refreshKey?: number })
             ? "Hosted service can submit allowed orders (execution still requires wallet permission)."
             : "Execution is disabled on the server.";
         } else {
-          serviceDetail = "Trading service unreachable — policy checks may still work offline.";
+          serviceDetail = "Trading service unreachable. Policy checks may still work offline.";
         }
         if (results[2]) {
           const readyRes = results[2] as Awaited<
@@ -105,7 +105,7 @@ export function ProtectionReadiness({ refreshKey = 0 }: { refreshKey?: number })
             }
             if (grantReady && readiness.overallStatus !== "ready") {
               grantDetail +=
-                " Wallet permission is on-chain — execute readiness may still need funding (see below).";
+                " Wallet permission is on-chain. Execute readiness may still need funding (see below).";
             }
           }
         }
@@ -245,7 +245,7 @@ function buildSteps(
       title: "Bot access code issued",
       detail: hasBotCode
         ? "Copy from Connect a bot below."
-        : "Created when setup finishes — appears on this dashboard.",
+        : "Created when setup finishes. Shown on My session.",
       done: hasBotCode,
       required: true,
     },
@@ -256,9 +256,9 @@ function buildSteps(
         executeOverall === "ready"
           ? "Collateral, gas, market, and wallet permission checks passed."
           : executeOverall === "action_required"
-            ? "Funding or setup still required — open Trade to see each check."
+            ? "Funding or setup still required. Open Trade to see each check."
             : executeOverall === "unavailable"
-              ? "Could not verify execute readiness — retry from the Trade page."
+              ? "Could not verify execute readiness. Retry from the Trade page."
               : "Check subaccount collateral and gas on the Trade page before live orders.",
       done: executeOverall === "ready",
       required: false,

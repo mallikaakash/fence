@@ -71,7 +71,7 @@ export function ProtectionHub() {
       clearProtectionSummary();
       clearGatewaySettings();
       setSummary(null);
-      setSessionMsg("Session ended on this device only — on-chain wallet permission unchanged.");
+      setSessionMsg("Session ended on this device only. On-chain wallet permission unchanged.");
     } catch (e) {
       setSessionMsg(e instanceof Error ? e.message : String(e));
     } finally {

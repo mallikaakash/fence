@@ -31,14 +31,14 @@ export function ConnectBotPanel({
       <div>
         <h2 className="text-lg font-medium text-[#75bfcf]">Connect a trading bot or AI</h2>
         <p className="text-sm text-white/65 mt-1">
-          Give your automation a <strong className="text-white/85">bot access code</strong> — not your
+          Give your automation a <strong className="text-white/85">bot access code</strong>, not your
           wallet seed phrase and not unlimited exchange permission.
         </p>
       </div>
 
       {!token ? (
         <p className="text-amber-200/90 text-sm border border-amber-400/25 rounded-lg px-3 py-2 bg-amber-950/20">
-          Set up protection first on{" "}
+          Set up Fence first on{" "}
           <Link href="/start" className="text-[#75bfcf] underline font-medium">
             Set up
           </Link>
@@ -59,7 +59,7 @@ export function ConnectBotPanel({
           </div>
           <p className="text-[11px] text-white/45">
             Paste into your bot or AI tool. Anyone with this code can run policy checks and request
-            execution within your limits — keep it private.
+            execution within your limits. Keep it private.
           </p>
           {(() => {
             const exp = loadProtectionSummary()?.agentTokenExpiresAt;

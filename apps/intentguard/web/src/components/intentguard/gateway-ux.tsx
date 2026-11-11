@@ -27,7 +27,7 @@ export function EnvironmentRibbon() {
   if (proxyReady) {
     return (
       <div className="fixed top-0 inset-x-0 z-[60] bg-[#0d3d4a]/95 border-b border-[#75bfcf]/40 text-[#c8ecf4] text-xs text-center py-1.5 px-3">
-        {onConsole ? "Injective testnet — developer tools only." : HOSTED_RIBBON}
+        {onConsole ? "Injective testnet. Developer tools only." : HOSTED_RIBBON}
       </div>
     );
   }
@@ -35,7 +35,7 @@ export function EnvironmentRibbon() {
   return (
     <div className="fixed top-0 inset-x-0 z-[60] bg-amber-950/90 border-b border-amber-500/40 text-amber-100 text-xs text-center py-1.5 px-3">
       {onConsole
-        ? "Sidecar not wired — set INTENTGUARD_GATEWAY_URL on Vercel (see docs/DEPLOY-PRODUCTION.md) or use local npm run web:dev."
+        ? "Sidecar not wired. Set INTENTGUARD_GATEWAY_URL on Vercel (see docs/DEPLOY-PRODUCTION.md) or use local npm run web:dev."
         : "Grant audit works here; owner console needs a deployed sidecar + Vercel proxy env."}
     </div>
   );
@@ -91,7 +91,7 @@ export function GatewaySecretsPanel({ onClear }: { onClear: () => void }) {
         <p className="text-white/50">Last saved: {new Date(savedAt).toLocaleString()}</p>
       )}
       {stale && hasSecrets && (
-        <p className="text-amber-200/90">Keys are older than 24h — consider clearing if this is not your daily dev machine.</p>
+        <p className="text-amber-200/90">Keys are older than 24h. Consider clearing if this is not your daily dev machine.</p>
       )}
       <button
         type="button"

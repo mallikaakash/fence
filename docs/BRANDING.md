@@ -8,6 +8,8 @@
 | **GCP services** | `intentguard-gateway`, `intentguard-web` |
 | **MCP server ids** | `intentguard-agent`, `intentguard-policy` |
 
-User-facing strings use **Fence** (see `apps/intentguard/src/brand.ts` and `web/src/lib/brand.ts`).
+**Favicon / app icon:** `web/src/app/icon.png` (candlestick F mark). UI uses the orange **Fence** word chip on the home hero, not the image mark in the layout.
+
+See `web/src/lib/brand.ts` and `src/brand.ts` for product name in copy.
 
 Internal TypeScript names such as `IntentGuardPolicy` remain until a dedicated types rename.

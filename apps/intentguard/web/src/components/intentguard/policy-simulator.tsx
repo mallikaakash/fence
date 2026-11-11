@@ -159,7 +159,7 @@ export function PolicySimulator() {
     if (!forbidden) {
       setResult({
         ok: false,
-        error: "All testnet markets are in your allowlist — add only INJ to test deny.",
+        error: "All testnet markets are in your allowlist. Add only INJ to test deny.",
       });
       setBusy(false);
       return;
@@ -211,7 +211,7 @@ export function PolicySimulator() {
           <div className="space-y-2">
             <p className="text-xs uppercase tracking-wide text-amber-200/80">Preview mode</p>
             <p className="text-sm text-amber-200/90 border border-amber-400/25 rounded-xl px-4 py-3 bg-amber-950/20">
-              You&apos;re seeing example caps — not your wallet yet. Finish{" "}
+              You&apos;re seeing example caps, not your wallet yet. Finish{" "}
               <Link href="/start" className="text-[#75bfcf] underline font-medium">
                 Start setup
               </Link>{" "}
@@ -220,7 +220,7 @@ export function PolicySimulator() {
           </div>
         ) : (
           <p className="text-xs text-green-200/90 border border-green-400/25 rounded-xl px-4 py-2 bg-green-950/20">
-            Using your protection session — results match what a bot would see.
+            Using your session. Results match what a bot would see.
           </p>
         )}
 
@@ -266,7 +266,7 @@ export function PolicySimulator() {
                 <Field label="Max order size (preview)" value={maxNotional} onChange={setMaxNotional} />
               ) : (
                 <p className="col-span-2 text-white/50 text-xs">
-                  Max order {maxNotional} from protection — change on{" "}
+                  Max order {maxNotional} from your session. Change on{" "}
                   <Link href="/start" className="text-[#75bfcf] underline">
                     Set up
                   </Link>
@@ -330,12 +330,12 @@ export function PolicySimulator() {
                 </p>
                 {sidecarReady && result.status === "allowed" ? (
                   <p className="text-white/55 text-xs mt-1">
-                    Rules satisfied — not execution. Wallet permission is required for real trades.
+                    Rules satisfied, not execution. Wallet permission is required for real trades.
                   </p>
                 ) : null}
                 {!sidecarReady && result.status === "allowed" ? (
                   <p className="text-white/55 text-xs mt-1">
-                    Simulated caps only — no gateway session.
+                    Simulated caps only. No gateway session.
                   </p>
                 ) : null}
                 {result.reasons?.map((r) => (
@@ -364,7 +364,7 @@ export function PolicySimulator() {
                   )}
                 {sidecarReady && result.status === "allowed" && !executeEnabled && (
                   <p className="text-white/50 text-xs mt-2">
-                    Live trading is starting — retry in a moment.
+                    Live trading is starting. Retry in a moment.
                   </p>
                 )}
               </div>

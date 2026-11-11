@@ -8,6 +8,7 @@ import {
 } from "@/lib/protection-state";
 import { TESTNET_PERP_MARKETS } from "@/lib/markets-testnet";
 import { ProtectionLiveStatus } from "@/components/intentguard/protection-live-status";
+import { NAV } from "@/lib/product-copy";
 
 export function ProtectionStatusBanner() {
   const [summary, setSummary] = useState<ProtectionSummary | null>(null);
@@ -40,7 +41,7 @@ export function ProtectionStatusBanner() {
       </div>
       {summary.grantReady ? (
         <p className="text-[11px] text-white/45">
-          On-chain permission does not mean execute-ready — confirm subaccount{" "}
+          On-chain permission is not the same as execute-ready. Confirm subaccount{" "}
           <strong className="text-white/55">quote collateral</strong> on{" "}
           <Link href="/trade" className="text-[#75bfcf] underline">
             Trade

@@ -36,7 +36,7 @@ export function ProtectionStatusHeadline({ refreshKey = 0 }: { refreshKey?: numb
       const grantRes = await gatewayGrantStatus(settings, summary.sessionId);
       if (!grantRes.res.ok) {
         setState({ kind: "pending_approval" });
-        setDetail("Could not verify wallet permission — try again shortly.");
+        setDetail("Could not verify wallet permission. Try again shortly.");
         return;
       }
       const parsed = parseGrantStatusJson(grantRes.json);

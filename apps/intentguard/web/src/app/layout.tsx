@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Fence · Injective testnet",
+  title: "Fence",
   description:
-    "Set trading limits for AI on Injective testnet — typed AuthZ, policy checks, and optional live execution.",
+    "Set trading limits for bots on Injective. Policy checks before execution.",
 };
 
 export default function RootLayout({

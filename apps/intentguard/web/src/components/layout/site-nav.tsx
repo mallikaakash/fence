@@ -2,29 +2,40 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { loadProtectionSummary } from "@/lib/protection-state";
 import { NAV } from "@/lib/product-copy";
-
-const LINKS = [
-  { href: "/", label: NAV.home },
-  { href: "/protection", label: NAV.dashboard },
-  { href: "/start", label: NAV.setup },
-  { href: "/portfolio", label: NAV.walletCheck },
-] as const;
 
 export function SiteNav() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [hasSession, setHasSession] = useState(false);
+
+  useEffect(() => {
+    setHasSession(Boolean(loadProtectionSummary()?.sessionId));
+  }, []);
+
+  const links = useMemo(() => {
+    const items: { href: string; label: string }[] = [
+      { href: "/", label: NAV.home },
+      { href: "/start", label: NAV.setup },
+    ];
+    if (hasSession) {
+      items.push({ href: "/protection", label: NAV.dashboard });
+    }
+    items.push({ href: "/limitations", label: NAV.help });
+    return items;
+  }, [hasSession]);
 
   return (
-  <>
+    <>
       <nav
         className="motion-nav fixed top-8 left-1/2 z-50 px-6 max-md:top-14 hidden md:block"
         aria-label="Main"
       >
         <div className="motion-nav__pill backdrop-blur-sm bg-white/5 border border-white/10 rounded-full shadow-2xl px-10 py-4">
           <div className="flex items-center justify-center space-x-10">
-            {LINKS.map((item) => {
+            {links.map((item) => {
               const active =
                 item.href === "/"
                   ? pathname === "/"
@@ -56,7 +67,7 @@ export function SiteNav() {
         </button>
         {open ? (
           <div className="mt-2 flex flex-col gap-2 backdrop-blur-md bg-black/85 border border-white/15 rounded-xl p-3 min-w-[10rem]">
-            {LINKS.map((item) => (
+            {links.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

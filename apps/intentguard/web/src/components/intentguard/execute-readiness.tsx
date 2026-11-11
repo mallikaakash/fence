@@ -32,7 +32,7 @@ export function ExecuteReadinessPanel() {
   return (
     <div className="border border-white/10 rounded-xl p-4 bg-black/30 space-y-2 text-xs text-white/70">
       <p className="text-[#75bfcf] uppercase tracking-wide text-[10px]">
-        Trading service (testnet) — developer view
+        Trading service (testnet), developer view
       </p>
       <ul className="space-y-1 list-disc list-inside">
         <li className={executeReady ? "text-green-300" : "text-amber-200"}>

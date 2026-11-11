@@ -7,7 +7,7 @@ export default function AgentPage() {
     <AppShell>
       <InnerPage
         title="Try sample AI phrases"
-        subtitle="Optional preview — tap a phrase to see allow or deny. Finish Protect to use your real limits."
+        subtitle="Tap a phrase to see allow or deny. Finish setup to use your real limits."
       >
         <AgentDemo />
       </InnerPage>

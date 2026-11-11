@@ -1,20 +1,21 @@
-export function PolicyCapsCallout({ defaultOpen = false }: { defaultOpen?: boolean }) {
+export function PolicyCapsCallout({ defaultOpen = true }: { defaultOpen?: boolean }) {
   return (
     <details
-      className="w-full text-sm text-white/75 border border-white/20 rounded-2xl bg-white/5 backdrop-blur-md"
+      className="w-full text-sm text-white/75 border border-white/15 rounded-xl bg-black/25"
       open={defaultOpen}
     >
-      <summary className="cursor-pointer px-4 py-3 text-[#75bfcf] text-xs uppercase tracking-[0.2em] font-medium list-none">
-        What Fence caps (and what it does not) ▾
+      <summary className="cursor-pointer px-4 py-3 text-white/80 text-sm font-medium list-none">
+        What Fence limits
       </summary>
-      <div className="px-4 pb-4 space-y-2 border-t border-white/10 pt-3 text-white/65 text-xs leading-relaxed">
-        <p>
-          <strong className="text-white/85">Per order</strong> margin &amp; notional ·{" "}
-          <strong className="text-white/85">per UTC day</strong> margin sum ·{" "}
-          <strong className="text-white/85">markets</strong> allowlisted on-chain.
-        </p>
-        <p className="text-white/45">
-          Not portfolio exposure or open position size — use exchange risk controls for that.
+      <div className="px-4 pb-4 space-y-3 border-t border-white/10 pt-3 text-white/65 text-sm leading-relaxed">
+        <ul className="list-disc list-inside space-y-2">
+          <li>Max size per order (margin and notional).</li>
+          <li>Max margin your bot can use in one UTC day.</li>
+          <li>Which markets it can trade (set during setup).</li>
+        </ul>
+        <p className="text-white/45 text-xs">
+          Fence does not cap total portfolio size or open position size. Use Helix or your own risk
+          controls for that.
         </p>
       </div>
     </details>

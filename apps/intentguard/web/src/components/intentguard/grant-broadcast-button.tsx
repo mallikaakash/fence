@@ -86,7 +86,7 @@ export function GrantBroadcastButton({
       </button>
       <p className="text-[10px] text-white/45">
         Requires testnet INJ in your wallet for network fees. You approve limited derivative orders
-        and cancel permissions for the assistant wallet — not full access to your funds.
+        and cancel permissions for the assistant wallet, not full access to your funds.
       </p>
       {result && (
         <p className="text-xs text-[#75bfcf] break-all">Tx: {result}</p>

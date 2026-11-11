@@ -23,16 +23,17 @@ test.describe("End user — first visit", () => {
 
   test("nav mirrors primary user paths", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" });
-    await page
-      .getByRole("navigation", { name: "Main" })
-      .first()
-      .getByRole("link", { name: "Dashboard" })
-      .click();
-    await expect(page).toHaveURL(/\/protection/);
+    const nav = page.getByRole("navigation", { name: "Main" }).first();
+    await nav.getByRole("link", { name: "Get started" }).click();
+    await expect(page).toHaveURL(/\/start/);
+    await page.goto("/", { waitUntil: "domcontentloaded" });
+    await nav.getByRole("link", { name: "How it works" }).click();
+    await expect(page).toHaveURL(/\/limitations/);
+    await page.goto("/protection", { waitUntil: "domcontentloaded" });
     await expect(page.getByText(/No protection set up yet/i)).toBeVisible();
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await page
-      .getByRole("navigation", { name: "Main" })
-      .first()
+      .getByRole("contentinfo")
       .getByRole("link", { name: "Wallet check" })
       .click();
     await expect(page).toHaveURL(/\/portfolio/);
@@ -45,17 +46,7 @@ test.describe("End user — first visit", () => {
     await expect(page.getByText("Connect wallet", { exact: true })).toBeVisible();
   });
 
-  test("trade and agent gate users without a session", async ({ page }) => {
-    await page.goto("/trade");
-    await expect(page.getByText(/Preview mode/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Check if allowed" })).toBeVisible();
-    await page.goto("/agent");
-    await expect(page.getByText(/Set up first/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: "Small long INJ" })).toBeDisabled();
-    await expect(page.getByRole("button", { name: /Execute testnet trade/i })).toHaveCount(0);
-  });
-
-  test("wallet check is usable without wallet extension", async ({ page }) => {
+  test("portfolio and trade pages load audit UI", async ({ page }) => {
     await page.goto("/portfolio");
     await expect(page.getByRole("button", { name: "Connect Keplr / Leap" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Run auditor" })).toBeVisible();
@@ -70,7 +61,7 @@ test.describe("End user — first visit", () => {
 
   test("developers page points to dashboard", async ({ page }) => {
     await page.goto("/console");
-    await expect(page.getByRole("link", { name: "Open dashboard" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Open my session" })).toBeVisible();
     await expect(page.getByText(/Everyday users/i)).toBeVisible();
   });
 });

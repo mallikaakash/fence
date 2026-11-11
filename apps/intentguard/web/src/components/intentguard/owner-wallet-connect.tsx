@@ -45,7 +45,7 @@ export function OwnerWalletConnect({
       const key = await provider.getKey(chainId);
       const addr = key.bech32Address;
       if (!addr.startsWith("inj1")) {
-        setStatus("Unexpected address format — use Injective testnet in wallet.");
+        setStatus("Unexpected address format. Use Injective testnet in wallet.");
         return;
       }
       setConnected(addr);

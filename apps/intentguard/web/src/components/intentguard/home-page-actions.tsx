@@ -3,31 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { loadProtectionSummary } from "@/lib/protection-state";
-import {
-  INJECTIVE_TESTNET_FAUCET_URL,
-} from "@/lib/testnet-resources";
-
-export function HomePrerequisites() {
-  return (
-    <div className="border border-white/15 rounded-xl bg-black/30 px-4 py-3 text-sm text-white/75 space-y-2 max-w-2xl">
-      <p className="text-xs uppercase tracking-wide text-[#75bfcf]">Before you start</p>
-      <ul className="list-disc list-inside text-white/65 text-xs space-y-1">
-        <li>
-          <strong className="text-white/85">Keplr or Leap</strong> with{" "}
-          <strong className="text-white/85">Injective testnet</strong> enabled
-        </li>
-        <li>About 3 minutes to choose limits and approve in your wallet</li>
-        <li>
-          For real testnet orders: test INJ (
-          <a href={INJECTIVE_TESTNET_FAUCET_URL} className="text-[#75bfcf] underline" target="_blank" rel="noreferrer">
-            faucet
-          </a>
-          ) and margin on Helix testnet
-        </li>
-      </ul>
-    </div>
-  );
-}
 
 export function HomePageActions() {
   const [hasProtection, setHasProtection] = useState(false);
@@ -44,7 +19,7 @@ export function HomePageActions() {
         </Link>
         {hasProtection ? (
           <Link href="/protection" className="cta-secondary motion-cta">
-            Open dashboard
+            Open my session
           </Link>
         ) : (
           <Link href="/limitations" className="cta-secondary motion-cta">
@@ -52,19 +27,11 @@ export function HomePageActions() {
           </Link>
         )}
       </div>
-      {hasProtection ? (
-        <p className="text-white/50 text-sm max-w-2xl">
-          You have protection on this device.{" "}
-          <Link href="/protection" className="text-[#75bfcf] underline">
-            Open dashboard
-          </Link>{" "}
-          for status, bot access code, and activity.
-        </p>
-      ) : (
-        <p className="text-white/50 text-sm max-w-2xl">
-          For Injective traders who want AI or bots to trade within{" "}
-          <strong className="text-white/70">your</strong> rules — not unlimited wallet access.
-        </p>
+      {hasProtection ? null : (
+        <div className="text-white/45 text-sm max-w-2xl leading-relaxed space-y-1">
+          <p>Setup takes a few minutes: connect your wallet, choose limits, approve once in Keplr or Leap.</p>
+          <p>Live testnet trades also need gas and margin.</p>
+        </div>
       )}
     </div>
   );

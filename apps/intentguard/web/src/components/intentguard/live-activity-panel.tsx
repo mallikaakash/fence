@@ -50,7 +50,7 @@ export function LiveActivityPanel() {
             );
           }
         } else if (!cancelled) {
-          setError("Gateway proxy not configured — live audit unavailable");
+          setError("Gateway proxy not configured. Live audit unavailable.");
         }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : String(e));
@@ -118,13 +118,13 @@ export function LiveActivityPanel() {
           label="Execute on sidecar"
           value={health?.executeEnabled ? "enabled" : "propose-only"}
         />
-        <Stat label="Sessions" value={String(health?.sessions ?? "—")} />
+        <Stat label="Sessions" value={String(health?.sessions ?? "n/a")} />
       </div>
 
       <p className="text-xs text-white/55">
         Live data from your deployed gateway. Policy proposes are{" "}
         <strong className="text-white/70">off-chain audit</strong> until MsgExec
-        broadcasts (execute mode). Notional limits are enforced by the gateway — see{" "}
+        broadcasts (execute mode). Notional limits are enforced by the gateway. See{" "}
         <a href="/limitations" className="text-[#75bfcf] underline">
           trust boundaries
         </a>

@@ -58,13 +58,100 @@ body {
   animation: hero-bg-drift-alt 26s ease-in-out infinite alternate;
 }
 
+.features-section--readable {
+  position: relative;
+  isolation: isolate;
+}
+
+.features-section--readable::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.88) 0%,
+    rgba(0, 0, 0, 0.92) 45%,
+    rgba(0, 0, 0, 0.96) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Inner routes: waves in margins; copy stays on opaque .inner-page-body */
 .inner-page-bg {
-  background-image: url('/3d-abstract-wave-pattern-background/v882-kul-33.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  position: relative;
+  isolation: isolate;
   min-height: 100vh;
-  animation: hero-bg-drift 30s ease-in-out infinite alternate;
+  background-color: #050505;
+  background-image: url("/3d-abstract-wave-pattern-background/v882-kul-33.jpg");
+  background-size: 135% auto;
+  background-position: center 112%;
+  background-repeat: no-repeat;
+  animation: inner-page-terrain-drift 32s ease-in-out infinite alternate;
+}
+
+.inner-page-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 5, 5, 0.88) 0%,
+    rgba(5, 5, 5, 0.55) 28%,
+    rgba(5, 5, 5, 0.12) 50%,
+    transparent 72%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes inner-page-terrain-drift {
+  from {
+    background-position: center 108%;
+    background-size: 132% auto;
+  }
+  to {
+    background-position: center 118%;
+    background-size: 138% auto;
+  }
+}
+
+.inner-page-bg > section {
+  position: relative;
+  z-index: 1;
+}
+
+/* Single readable column for copy + cards */
+.inner-page-body {
+  position: relative;
+  z-index: 1;
+  background: #0f1012;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  padding: 1.25rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .inner-page-body {
+    padding: 1.5rem 2rem;
+  }
+}
+
+.inner-page-body details,
+.inner-page-body aside,
+.inner-page-body > div.border,
+.inner-page-body .glass-card {
+  background: #14161a !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Softer ambient layer on inner routes (waves image does the heavy lifting) */
+.min-h-screen:has(.inner-page-bg) .motion-bg__grid {
+  opacity: 0.09;
+}
+
+.min-h-screen:has(.inner-page-bg) .motion-bg__orb {
+  opacity: 0.22;
 }
 
 @keyframes hero-bg-drift {
